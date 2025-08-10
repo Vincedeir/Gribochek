@@ -1,0 +1,2314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Adventure</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #070707;
+            color: white;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #musicToggle {
+            background-color: #4CAF50;
+            margin: 10px;
+        }
+
+        #musicToggle.music-off {
+            background-color: #f44336;
+        }
+
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            filter: brightness(1.5) contrast(1.5);
+        }
+
+        #menuScreen,
+        #gameScreen,
+        #gameOverScreen,
+        #settingsScreen,
+        #topScoresScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        #gameScreen {
+            display: none;
+        }
+
+        #gameOverScreen,
+        #settingsScreen,
+        #topScoresScreen {
+            display: none;
+        }
+
+        .menu-button {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .menu-button:hover {
+            background-color: #45a049;
+        }
+
+        .settings-row {
+            margin: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .settings-label {
+            width: 200px;
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        .settings-input {
+            padding: 5px;
+            width: 100px;
+        }
+
+        #topScoresTable {
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        #topScoresTable th,
+        #topScoresTable td {
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #topScoresTable th {
+            background-color: #333;
+        }
+
+        #hud {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            font-family: 'Arial', sans-serif;
+            text-shadow: 2px 2px 4px rgba(48, 45, 45, 0.7);
+            background-color: rgba(248, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            pointer-events: none;
+            /* Чтобы не мешал взаимодействию */
+            opacity: 1 !important;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        #comboDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: gold;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="hud">
+            <div>Score: <span id="scoreDisplay">0</span></div>
+            <div>Combo: <span id="comboCount">0</span>x</div>
+            <div>Health: <span id="healthDisplay">100</span></div>
+            <div>Keys: <span id="keysDisplay">0</span></div>
+        </div>
+
+        <div id="comboDisplay"></div>
+
+        <div id="menuScreen">
+            <h1>Грибочек в логове лабухов</h1>
+            <button class="menu-button" id="startButton">Новая игра</button>
+            <button class="menu-button" id="customLevelsButton">Загрузить уровень</button>
+            <button class="menu-button" id="editorButton">Редактор Уровней</button>
+            <button class="menu-button" id="settingsButton">Настройки</button>
+            <button class="menu-button" id="musicToggle">Музыка: Вкл</button>
+            <button class="menu-button" id="topScoresButton">Top 10</button>
+        </div>
+
+        <div id="gameScreen">
+            <!-- Игровой экран (активен во время игры) -->
+        </div>
+
+        <div id="gameOverScreen">
+            <h1>Game Over</h1>
+            <p>Your score: <span id="finalScore">0</span></p>
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            <button class="menu-button" id="saveScoreButton">Save Score</button>
+            <button class="menu-button" id="menuButton">Back to Menu</button>
+        </div>
+
+        <div id="settingsScreen">
+            <h1>Settings</h1>
+            <div class="settings-row">
+                <div class="settings-label">Move Left:</div>
+                <input type="text" class="settings-input" id="leftKey" readonly>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">Move Right:</div>
+                <input type="text" class="settings-input" id="rightKey" readonly>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">Jump:</div>
+                <input type="text" class="settings-input" id="jumpKey" readonly>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">Melee Attack:</div>
+                <input type="text" class="settings-input" id="meleeKey" readonly>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">Ranged Attack:</div>
+                <input type="text" class="settings-input" id="rangedKey" readonly>
+            </div>
+            <button class="menu-button" id="saveSettingsButton">Save Settings</button>
+            <button class="menu-button" id="defaultSettingsButton">Default Settings</button>
+            <button class="menu-button" id="backToMenuButton">Back to Menu</button>
+        </div>
+
+        <div id="topScoresScreen">
+            <h1>Top 10 Scores</h1>
+            <table id="topScoresTable">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>Score</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="topScoresBody">
+                    <!-- Таблица рекордов будет заполнена динамически -->
+                </tbody>
+            </table>
+            <button class="menu-button" id="backToMenuFromScores">Back to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        //window.gameLoopRunning = false;
+        // Основные константы игры
+        const GAME_WIDTH = window.innerWidth;
+        const GAME_HEIGHT = window.innerHeight;
+        const LEVEL_WIDTH = 5000;
+        const LEVEL_HEIGHT = 720;
+        const SCROLL_THRESHOLD = GAME_WIDTH * 0.3; // 30% от ширины экрана
+        const TILE_SIZE = 64;
+        const GRAVITY = 0.5;
+        const PLAYER_SPEED = 5;
+        const JUMP_FORCE = -17;
+
+        // Состояние игры
+        const gameState = {
+            currentScreen: 'menu',
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            health: 100,
+            keys: 0,
+            startTime: 0,
+            endTime: 0,
+            enemiesDefeated: 0,
+            totalEnemies: 0,
+            isBossSpawned: false,
+            isGameOver: false,
+            isPaused: false
+        };
+
+        // Управление
+        const controls = {
+            left: 'ArrowLeft',
+            right: 'ArrowRight',
+            jump: 'ArrowUp',
+            melee: 'KeyZ',
+            ranged: 'KeyX'
+        };
+
+        // Игровые объекты
+        const gameObjects = {
+            player: null,
+            enemies: [],
+            projectiles: [],
+            platforms: [],
+            obstacles: [],
+            keys: [],
+            doors: [],
+            background: null,
+            boss: null
+        };
+
+        // Спрайты
+        const sprites = {
+            player: null,
+            enemy1: null,
+            enemy2: null,
+            boss: null,
+            key: null,
+            background: null,
+            projectile: null
+        };
+
+        // DOM элементы
+        const elements = {
+            gameCanvas: document.getElementById('gameCanvas'),
+            menuScreen: document.getElementById('menuScreen'),
+            gameScreen: document.getElementById('gameScreen'),
+            gameOverScreen: document.getElementById('gameOverScreen'),
+            settingsScreen: document.getElementById('settingsScreen'),
+            topScoresScreen: document.getElementById('topScoresScreen'),
+            scoreDisplay: document.getElementById('scoreDisplay'),
+            comboDisplay: document.getElementById('comboDisplay'),
+            comboCount: document.getElementById('comboCount'),
+            healthDisplay: document.getElementById('healthDisplay'),
+            keysDisplay: document.getElementById('keysDisplay'),
+            finalScore: document.getElementById('finalScore'),
+            playerName: document.getElementById('playerName'),
+            startButton: document.getElementById('startButton'),
+            settingsButton: document.getElementById('settingsButton'),
+            topScoresButton: document.getElementById('topScoresButton'),
+            saveScoreButton: document.getElementById('saveScoreButton'),
+            customLevelsButton: document.getElementById('customLevelsButton'),
+            editorButton: document.getElementById('editorButton'),
+            menuButton: document.getElementById('menuButton'),
+            saveSettingsButton: document.getElementById('saveSettingsButton'),
+            defaultSettingsButton: document.getElementById('defaultSettingsButton'),
+            backToMenuButton: document.getElementById('backToMenuButton'),
+            backToMenuFromScores: document.getElementById('backToMenuFromScores'),
+            leftKey: document.getElementById('leftKey'),
+            rightKey: document.getElementById('rightKey'),
+            jumpKey: document.getElementById('jumpKey'),
+            meleeKey: document.getElementById('meleeKey'),
+            rangedKey: document.getElementById('rangedKey'),
+            topScoresBody: document.getElementById('topScoresBody')
+        };
+
+        // Контекст canvas
+        const ctx = elements.gameCanvas.getContext('2d');
+        elements.gameCanvas.width = GAME_WIDTH;
+        elements.gameCanvas.height = GAME_HEIGHT;
+
+        // Класс игрока
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 50;
+                this.height = 80;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.isJumping = false;
+                this.isAttacking = false;
+                this.attackCooldown = 0;
+                this.direction = 1; // 1 - вправо, -1 - влево
+                this.health = 100;
+                this.meleeAttackRange = 70;
+                this.rangedAttackRange = 300;
+                this.rangedAttackCooldown = 0;
+                this.invincible = false;
+                this.invincibleTimer = 0;
+            }
+
+            update() {
+                // Проверка границ уровня
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
+
+                // Если игрок упал за пределы уровня
+                if (this.y > LEVEL_HEIGHT) {
+                    this.takeDamage(999); // Мгновенная смерть
+                }
+                // Проверка на попадание в пропасть
+                for (const zone of gameObjects.deathZones) {
+                    if (this.x < zone.x + zone.width &&
+                        this.x + this.width > zone.x &&
+                        this.y < zone.y + zone.height &&
+                        this.y + this.height > zone.y) {
+
+                        if (zone.isBottomPit) {
+                            // Падение за пределы уровня
+                            this.takeDamage(9999);
+                        } else {
+                            // Падение в пропасть между платформами
+                            this.takeDamage(9999);
+                        }
+                        break;
+                    }
+                }
+                // Движение
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+
+                // Гравитация
+                this.velocityY += GRAVITY;
+
+                // Ограничение скорости падения
+                if (this.velocityY > 15) {
+                    this.velocityY = 15;
+                }
+
+                // Обработка атак
+                if (this.isAttacking && this.attackCooldown <= 0) {
+                    this.performMeleeAttack();
+                    this.attackCooldown = 30;
+                }
+
+                if (this.attackCooldown > 0) {
+                    this.attackCooldown--;
+                }
+
+                if (this.rangedAttackCooldown > 0) {
+                    this.rangedAttackCooldown--;
+                }
+
+                // Обработка неуязвимости
+                if (this.invincible) {
+                    this.invincibleTimer--;
+                    if (this.invincibleTimer <= 0) {
+                        this.invincible = false;
+                    }
+                }
+
+                // Ограничение выхода за границы экрана (по вертикали)
+                if (this.y > GAME_HEIGHT - this.height) {
+                    this.y = GAME_HEIGHT - this.height;
+                    this.velocityY = 0;
+                    this.isJumping = false;
+                }
+
+                // Проверка столкновений с платформами
+                for (const platform of gameObjects.platforms) {
+                    if (this.x < platform.x + platform.width &&
+                        this.x + this.width > platform.x &&
+                        this.y < platform.y + platform.height &&
+                        this.y + this.height > platform.y) {
+
+                        // Столкновение сверху
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= platform.y) {
+                            this.y = platform.y - this.height;
+                            this.velocityY = 0;
+                            this.isJumping = false;
+                        }
+                        // Столкновение снизу
+                        else if (this.velocityY < 0 && this.y - this.velocityY >= platform.y + platform.height) {
+                            this.y = platform.y + platform.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение слева
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= platform.x) {
+                            this.x = platform.x - this.width;
+                            this.velocityX = 0;
+                        }
+                        // Столкновение справа
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= platform.x + platform.width) {
+                            this.x = platform.x + platform.width;
+                            this.velocityX = 0;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с препятствиями
+                for (const obstacle of gameObjects.obstacles) {
+                    if (this.x < obstacle.x + obstacle.width &&
+                        this.x + this.width > obstacle.x &&
+                        this.y < obstacle.y + obstacle.height &&
+                        this.y + this.height > obstacle.y) {
+
+                        // Аналогично платформам
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= obstacle.y) {
+                            this.y = obstacle.y - this.height;
+                            this.velocityY = 0;
+                            this.isJumping = false;
+                        }
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= obstacle.x) {
+                            this.x = obstacle.x - this.width;
+                            this.velocityX = 0;
+                        }
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= obstacle.x + obstacle.width) {
+                            this.x = obstacle.x + obstacle.width;
+                            this.velocityX = 0;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с ключами
+                for (let i = gameObjects.keys.length - 1; i >= 0; i--) {
+                    const key = gameObjects.keys[i];
+                    if (this.x < key.x + key.width &&
+                        this.x + this.width > key.x &&
+                        this.y < key.y + key.height &&
+                        this.y + this.height > key.y) {
+
+                        gameObjects.keys.splice(i, 1);
+                        gameState.keys++;
+                        updateHUD();
+                        playSound('key');
+                    }
+                }
+
+                // Проверка столкновений с дверями
+                for (const door of gameObjects.doors) {
+                    if (!door.isOpen &&
+                        this.x < door.x + door.width &&
+                        this.x + this.width > door.x &&
+                        this.y < door.y + door.height &&
+                        this.y + this.height > door.y) {
+
+                        if (gameState.keys > 0) {
+                            door.isOpen = true;
+                            gameState.keys--;
+                            updateHUD();
+                            playSound('door');
+                        }
+                    }
+                }
+
+                // Проверка столкновений с врагами
+                if (!this.invincible) {
+                    for (const enemy of gameObjects.enemies) {
+                        if (this.x < enemy.x + enemy.width &&
+                            this.x + this.width > enemy.x &&
+                            this.y < enemy.y + enemy.height &&
+                            this.y + this.height > enemy.y) {
+
+                            this.takeDamage(10);
+                            // Отбрасывание игрока при получении урона
+                            const knockbackDirection = this.x < enemy.x ? -1 : 1;
+                            this.velocityX = knockbackDirection * 8;
+                            this.velocityY = -5;
+                            break;
+                        }
+                    }
+
+                    // Проверка столкновений с боссом
+                    if (gameObjects.boss) {
+                        const boss = gameObjects.boss;
+                        if (this.x < boss.x + boss.width &&
+                            this.x + this.width > boss.x &&
+                            this.y < boss.y + boss.height &&
+                            this.y + this.height > boss.y) {
+
+                            this.takeDamage(20);
+                            // Отбрасывание игрока при получении урона
+                            const knockbackDirection = this.x < boss.x ? -1 : 1;
+                            this.velocityX = knockbackDirection * 12;
+                            this.velocityY = -8;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с проектилями врагов
+                for (let i = gameObjects.projectiles.length - 1; i >= 0; i--) {
+                    const projectile = gameObjects.projectiles[i];
+                    if (projectile.isEnemyProjectile &&
+                        this.x < projectile.x + projectile.width &&
+                        this.x + this.width > projectile.x &&
+                        this.y < projectile.y + projectile.height &&
+                        this.y + this.height > projectile.y) {
+
+                        gameObjects.projectiles.splice(i, 1);
+                        this.takeDamage(projectile.damage);
+                        // Отбрасывание игрока при получении урона
+                        const knockbackDirection = this.x < projectile.x ? -1 : 1;
+                        this.velocityX = knockbackDirection * 6;
+                        this.velocityY = -4;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+
+                // Отрисовка игрока
+                if (this.invincible && Math.floor(Date.now() / 100) % 2 === 0) {
+                    ctx.globalAlpha = 0.5;
+                }
+
+                if (this.direction === -1) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sprites.player, -this.x - this.width, this.y, this.width, this.height);
+                } else {
+                    ctx.drawImage(sprites.player, this.x, this.y, this.width, this.height);
+                }
+
+                // Отрисовка атаки ближнего боя
+                if (this.isAttacking && this.attackCooldown > 20) {
+                    ctx.fillStyle = 'rgba(255, 200, 0, 0.3)';
+                    const attackX = this.direction === 1 ? this.x + this.width : this.x - this.meleeAttackRange;
+                    ctx.fillRect(attackX, this.y, this.meleeAttackRange, this.height);
+                }
+
+                ctx.restore();
+            }
+
+            jump() {
+                if (!this.isJumping) {
+                    this.velocityY = JUMP_FORCE;
+                    this.isJumping = true;
+                    playSound('jump');
+                }
+            }
+
+            performMeleeAttack() {
+                this.isAttacking = true;
+                playSound('melee');
+
+                const attackRect = {
+                    x: this.direction === 1 ? this.x + this.width : this.x - this.meleeAttackRange,
+                    y: this.y,
+                    width: this.meleeAttackRange,
+                    height: this.height
+                };
+
+                // Проверка попадания по врагам
+                for (let i = gameObjects.enemies.length - 1; i >= 0; i--) {
+                    const enemy = gameObjects.enemies[i];
+
+                    if (attackRect.x < enemy.x + enemy.width &&
+                        attackRect.x + attackRect.width > enemy.x &&
+                        attackRect.y < enemy.y + enemy.height &&
+                        attackRect.y + attackRect.height > enemy.y) {
+
+                        enemy.takeDamage(20);
+                        addScore(50);
+                        gameState.combo++;
+                        updateComboDisplay();
+                    }
+                }
+
+                // Проверка попадания по боссу
+                if (gameObjects.boss) {
+                    const boss = gameObjects.boss;
+
+                    if (attackRect.x < boss.x + boss.width &&
+                        attackRect.x + attackRect.width > boss.x &&
+                        attackRect.y < boss.y + boss.height &&
+                        attackRect.y + attackRect.height > boss.y) {
+
+                        boss.takeDamage(10);
+                        addScore(100);
+                        gameState.combo++;
+                        updateComboDisplay();
+                    }
+                }
+            }
+
+            performRangedAttack() {
+                if (this.rangedAttackCooldown <= 0) {
+                    const projectileX = this.direction === 1 ? this.x + this.width : this.x;
+                    const projectileY = this.y + this.height / 2;
+
+                    const projectile = new Projectile(
+                        projectileX,
+                        projectileY,
+                        this.direction,
+                        false,
+                        15
+                    );
+
+                    gameObjects.projectiles.push(projectile);
+                    this.rangedAttackCooldown = 45;
+                    playSound('ranged');
+                }
+            }
+
+            takeDamage(amount) {
+                if (!this.invincible) {
+                    this.health -= amount;
+                    gameState.health = this.health;
+                    updateHUD();
+                    playSound('hurt');
+
+                    if (this.health <= 0) {
+                        this.health = 0;
+                        gameOver();
+                    } else {
+                        // Активация неуязвимости после получения урона
+                        this.invincible = true;
+                        this.invincibleTimer = 60;
+                    }
+                }
+            }
+        }
+
+        // Класс врага ближнего боя
+        class MeleeEnemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 50;
+                this.height = 80;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.health = 30;
+                this.direction = -1; // Направление движения (-1 - влево, 1 - вправо)
+                this.speed = 1.5;
+                this.attackCooldown = 0;
+                this.detectionRange = 300;
+                this.attackRange = 60;
+            }
+
+            update() {
+                // Гравитация
+                // Проверка границ уровня
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
+
+                // Если враг упал за пределы уровня
+                if (this.y > LEVEL_HEIGHT) {
+                    this.takeDamage(999); // Мгновенная смерть
+                }
+                this.velocityY += GRAVITY;
+
+                // Ограничение скорости падения
+                if (this.velocityY > 15) {
+                    this.velocityY = 15;
+                }
+
+                // Движение
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+
+                // ИИ врага
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Если игрок в зоне обнаружения
+                if (distance < this.detectionRange) {
+                    // Определение направления к игроку
+                    this.direction = dx > 0 ? 1 : -1;
+
+                    // Движение к игроку
+                    this.velocityX = this.direction * this.speed;
+
+                    // Атака, если игрок в зоне атаки
+                    if (distance < this.attackRange && this.attackCooldown <= 0) {
+                        this.attack();
+                        this.attackCooldown = 60;
+                    }
+                } else {
+                    // Случайное блуждание
+                    if (Math.random() < 0.01) {
+                        this.direction = Math.random() < 0.5 ? -1 : 1;
+                    }
+                    this.velocityX = this.direction * this.speed;
+                }
+
+                if (this.attackCooldown > 0) {
+                    this.attackCooldown--;
+                }
+                // Проверка на падение в пропасть
+                for (const zone of gameObjects.deathZones) {
+                    if (this.x < zone.x + zone.width &&
+                        this.x + this.width > zone.x &&
+                        this.y < zone.y + zone.height &&
+                        this.y + this.height > zone.y) {
+                        this.die(true); // true = упал в пропасть
+                        return;
+                    }
+                }
+                // Проверка столкновений с платформами
+                for (const platform of gameObjects.platforms) {
+                    if (this.x < platform.x + platform.width &&
+                        this.x + this.width > platform.x &&
+                        this.y < platform.y + platform.height &&
+                        this.y + this.height > platform.y) {
+
+                        // Столкновение сверху
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= platform.y) {
+                            this.y = platform.y - this.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение снизу
+                        else if (this.velocityY < 0 && this.y - this.velocityY >= platform.y + platform.height) {
+                            this.y = platform.y + platform.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение слева
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= platform.x) {
+                            this.x = platform.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        // Столкновение справа
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= platform.x + platform.width) {
+                            this.x = platform.x + platform.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с препятствиями
+                for (const obstacle of gameObjects.obstacles) {
+                    if (this.x < obstacle.x + obstacle.width &&
+                        this.x + this.width > obstacle.x &&
+                        this.y < obstacle.y + obstacle.height &&
+                        this.y + this.height > obstacle.y) {
+
+                        if (this.velocityX > 0 && this.x + this.width - this.velocityX <= obstacle.x) {
+                            this.x = obstacle.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= obstacle.x + obstacle.width) {
+                            this.x = obstacle.x + obstacle.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с проектилями игрока
+                for (let i = gameObjects.projectiles.length - 1; i >= 0; i--) {
+                    const projectile = gameObjects.projectiles[i];
+                    if (!projectile.isEnemyProjectile &&
+                        this.x < projectile.x + projectile.width &&
+                        this.x + this.width > projectile.x &&
+                        this.y < projectile.y + projectile.height &&
+                        this.y + this.height > projectile.y) {
+
+                        gameObjects.projectiles.splice(i, 1);
+                        this.takeDamage(projectile.damage);
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+
+                if (this.direction === -1) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sprites.enemy1, -this.x - this.width, this.y, this.width, this.height);
+                } else {
+                    ctx.drawImage(sprites.enemy1, this.x, this.y, this.width, this.height);
+                }
+
+                // Отрисовка здоровья
+                const healthBarWidth = this.width;
+                const healthBarHeight = 5;
+                const healthPercentage = this.health / 30;
+
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y - 10, healthBarWidth, healthBarHeight);
+                ctx.fillStyle = 'green';
+                ctx.fillRect(this.x, this.y - 10, healthBarWidth * healthPercentage, healthBarHeight);
+
+                ctx.restore();
+            }
+
+            attack() {
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < this.attackRange) {
+                    player.takeDamage(10);
+                    playSound('enemyAttack');
+                }
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+
+                if (this.health <= 0) {
+                    this.die();
+                } else {
+                    // Эффект получения урона
+                    playSound('enemyHurt');
+                }
+            }
+
+            die(fellIntoPit = false) {
+                if (fellIntoPit) {
+                    addScore(10); // Меньше очков за падение
+                } else {
+                    addScore(50); // Полные очки за убийство
+                }
+                const index = gameObjects.enemies.indexOf(this);
+                if (index !== -1) {
+                    gameObjects.enemies.splice(index, 1);
+                    gameState.enemiesDefeated++;
+                    checkBossSpawn();
+                    playSound('enemyDeath');
+                }
+            }
+        }
+
+        // Класс врага дальнего боя
+        class RangedEnemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 50;
+                this.height = 80;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.health = 20;
+                this.direction = -1;
+                this.speed = 1;
+                this.attackCooldown = 0;
+                this.detectionRange = 400;
+                this.attackRange = 350;
+                this.projectileSpeed = 7;
+            }
+
+            update() {
+                // Проверка границ уровня
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
+
+                // Если игрок упал за пределы уровня
+                if (this.y > LEVEL_HEIGHT) {
+                    this.takeDamage(999); // Мгновенная смерть
+                }
+                // Гравитация
+                this.velocityY += GRAVITY;
+
+                // Ограничение скорости падения
+                if (this.velocityY > 15) {
+                    this.velocityY = 15;
+                }
+
+                // Движение
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+
+                // ИИ врага
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Если игрок в зоне обнаружения
+                if (distance < this.detectionRange) {
+                    // Определение направления к игроку
+                    this.direction = dx > 0 ? 1 : -1;
+
+                    // Движение от игрока, если он слишком близко
+                    if (distance < 200) {
+                        this.velocityX = -this.direction * this.speed;
+                    } else {
+                        this.velocityX = 0;
+                    }
+
+                    // Атака, если игрок в зоне атаки
+                    if (distance < this.attackRange && this.attackCooldown <= 0) {
+                        this.attack();
+                        this.attackCooldown = 120;
+                    }
+                } else {
+                    // Случайное блуждание
+                    if (Math.random() < 0.01) {
+                        this.direction = Math.random() < 0.5 ? -1 : 1;
+                    }
+                    this.velocityX = this.direction * this.speed;
+                }
+
+                if (this.attackCooldown > 0) {
+                    this.attackCooldown--;
+                }
+
+                // Проверка столкновений с платформами
+                for (const platform of gameObjects.platforms) {
+                    if (this.x < platform.x + platform.width &&
+                        this.x + this.width > platform.x &&
+                        this.y < platform.y + platform.height &&
+                        this.y + this.height > platform.y) {
+
+                        // Столкновение сверху
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= platform.y) {
+                            this.y = platform.y - this.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение снизу
+                        else if (this.velocityY < 0 && this.y - this.velocityY >= platform.y + platform.height) {
+                            this.y = platform.y + platform.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение слева
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= platform.x) {
+                            this.x = platform.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        // Столкновение справа
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= platform.x + platform.width) {
+                            this.x = platform.x + platform.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с препятствиями
+                for (const obstacle of gameObjects.obstacles) {
+                    if (this.x < obstacle.x + obstacle.width &&
+                        this.x + this.width > obstacle.x &&
+                        this.y < obstacle.y + obstacle.height &&
+                        this.y + this.height > obstacle.y) {
+
+                        if (this.velocityX > 0 && this.x + this.width - this.velocityX <= obstacle.x) {
+                            this.x = obstacle.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= obstacle.x + obstacle.width) {
+                            this.x = obstacle.x + obstacle.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с проектилями игрока
+                for (let i = gameObjects.projectiles.length - 1; i >= 0; i--) {
+                    const projectile = gameObjects.projectiles[i];
+                    if (!projectile.isEnemyProjectile &&
+                        this.x < projectile.x + projectile.width &&
+                        this.x + this.width > projectile.x &&
+                        this.y < projectile.y + projectile.height &&
+                        this.y + this.height > projectile.y) {
+
+                        gameObjects.projectiles.splice(i, 1);
+                        this.takeDamage(projectile.damage);
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+
+                if (this.direction === -1) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sprites.enemy2, -this.x - this.width, this.y, this.width, this.height);
+                } else {
+                    ctx.drawImage(sprites.enemy2, this.x, this.y, this.width, this.height);
+                }
+
+                // Отрисовка здоровья
+                const healthBarWidth = this.width;
+                const healthBarHeight = 5;
+                const healthPercentage = this.health / 20;
+
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y - 10, healthBarWidth, healthBarHeight);
+                ctx.fillStyle = 'green';
+                ctx.fillRect(this.x, this.y - 10, healthBarWidth * healthPercentage, healthBarHeight);
+
+                ctx.restore();
+            }
+
+            attack() {
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const directionX = dx / distance;
+                const directionY = dy / distance;
+
+                const projectile = new Projectile(
+                    this.x + this.width / 2,
+                    this.y + this.height / 2,
+                    this.direction,
+                    true,
+                    10,
+                    directionX * this.projectileSpeed,
+                    directionY * this.projectileSpeed
+                );
+
+                gameObjects.projectiles.push(projectile);
+                playSound('enemyRanged');
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+
+                if (this.health <= 0) {
+                    this.die();
+                } else {
+                    // Эффект получения урона
+                    playSound('enemyHurt');
+                }
+            }
+
+            die(fellIntoPit = false) {
+                if (fellIntoPit) {
+                    addScore(10); // Меньше очков за падение
+                } else {
+                    addScore(50); // Полные очки за убийство
+                }
+                const index = gameObjects.enemies.indexOf(this);
+                if (index !== -1) {
+                    gameObjects.enemies.splice(index, 1);
+                    gameState.enemiesDefeated++;
+                    checkBossSpawn();
+                    playSound('enemyDeath');
+                }
+            }
+        }
+
+        // Класс босса
+        class Boss {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 100;
+                this.height = 120;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.health = 200;
+                this.direction = -1;
+                this.speed = 2;
+                this.attackCooldown = 0;
+                this.meleeAttackCooldown = 0;
+                this.rangedAttackCooldown = 0;
+                this.detectionRange = 500;
+                this.meleeAttackRange = 80;
+                this.rangedAttackRange = 400;
+                this.projectileSpeed = 5;
+                this.isActive = false;
+            }
+
+            update() {
+                // Проверка границ уровня
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
+
+                // Если игрок упал за пределы уровня
+                if (this.y > LEVEL_HEIGHT) {
+                    this.takeDamage(999); // Мгновенная смерть
+                }
+                // Гравитация
+                this.velocityY += GRAVITY;
+
+                // Ограничение скорости падения
+                if (this.velocityY > 15) {
+                    this.velocityY = 15;
+                }
+
+                // Движение
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+
+                // Активация босса, когда игрок приближается
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const distance = Math.abs(dx);
+
+                if (!this.isActive && distance < this.detectionRange) {
+                    this.isActive = true;
+                    playSound('bossActivate');
+                }
+
+                // ИИ босса
+                if (this.isActive) {
+                    // Определение направления к игроку
+                    this.direction = dx > 0 ? 1 : -1;
+
+                    // Движение к игроку
+                    this.velocityX = this.direction * this.speed;
+
+                    // Атаки
+                    if (this.meleeAttackCooldown <= 0 && distance < this.meleeAttackRange) {
+                        this.meleeAttack();
+                        this.meleeAttackCooldown = 90;
+                    }
+
+                    if (this.rangedAttackCooldown <= 0 && distance < this.rangedAttackRange) {
+                        this.rangedAttack();
+                        this.rangedAttackCooldown = 180;
+                    }
+                }
+
+                if (this.meleeAttackCooldown > 0) {
+                    this.meleeAttackCooldown--;
+                }
+
+                if (this.rangedAttackCooldown > 0) {
+                    this.rangedAttackCooldown--;
+                }
+
+                // Проверка столкновений с платформами
+                for (const platform of gameObjects.platforms) {
+                    if (this.x < platform.x + platform.width &&
+                        this.x + this.width > platform.x &&
+                        this.y < platform.y + platform.height &&
+                        this.y + this.height > platform.y) {
+
+                        // Столкновение сверху
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= platform.y) {
+                            this.y = platform.y - this.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение снизу
+                        else if (this.velocityY < 0 && this.y - this.velocityY >= platform.y + platform.height) {
+                            this.y = platform.y + platform.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение слева
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= platform.x) {
+                            this.x = platform.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        // Столкновение справа
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= platform.x + platform.width) {
+                            this.x = platform.x + platform.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с препятствиями
+                for (const obstacle of gameObjects.obstacles) {
+                    if (this.x < obstacle.x + obstacle.width &&
+                        this.x + this.width > obstacle.x &&
+                        this.y < obstacle.y + obstacle.height &&
+                        this.y + this.height > obstacle.y) {
+
+                        if (this.velocityX > 0 && this.x + this.width - this.velocityX <= obstacle.x) {
+                            this.x = obstacle.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= obstacle.x + obstacle.width) {
+                            this.x = obstacle.x + obstacle.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
+                // Проверка столкновений с проектилями игрока
+                for (let i = gameObjects.projectiles.length - 1; i >= 0; i--) {
+                    const projectile = gameObjects.projectiles[i];
+                    if (!projectile.isEnemyProjectile &&
+                        this.x < projectile.x + projectile.width &&
+                        this.x + this.width > projectile.x &&
+                        this.y < projectile.y + projectile.height &&
+                        this.y + this.height > projectile.y) {
+
+                        gameObjects.projectiles.splice(i, 1);
+                        this.takeDamage(projectile.damage);
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+
+                if (this.direction === -1) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sprites.boss, -this.x - this.width, this.y, this.width, this.height);
+                } else {
+                    ctx.drawImage(sprites.boss, this.x, this.y, this.width, this.height);
+                }
+
+                // Отрисовка здоровья
+                const healthBarWidth = this.width;
+                const healthBarHeight = 8;
+                const healthPercentage = this.health / 200;
+
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y - 15, healthBarWidth, healthBarHeight);
+                ctx.fillStyle = 'green';
+                ctx.fillRect(this.x, this.y - 15, healthBarWidth * healthPercentage, healthBarHeight);
+
+                // Эффект атаки ближнего боя
+                if (this.meleeAttackCooldown > 70) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+                    const attackX = this.direction === 1 ? this.x + this.width : this.x - this.meleeAttackRange;
+                    ctx.fillRect(attackX, this.y, this.meleeAttackRange, this.height);
+                }
+
+                ctx.restore();
+            }
+
+            meleeAttack() {
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < this.meleeAttackRange) {
+                    player.takeDamage(20);
+                    playSound('bossAttack');
+                }
+            }
+
+            rangedAttack() {
+                const player = gameObjects.player;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const directionX = dx / distance;
+                const directionY = dy / distance;
+
+                // Босс выпускает 3 снаряда веером
+                for (let i = 0; i < 3; i++) {
+                    const angleVariation = (i - 1) * 0.2; // -0.2, 0, 0.2
+                    const projDirectionX = directionX * Math.cos(angleVariation) - directionY * Math.sin(angleVariation);
+                    const projDirectionY = directionX * Math.sin(angleVariation) + directionY * Math.cos(angleVariation);
+
+                    const projectile = new Projectile(
+                        this.x + this.width / 2,
+                        this.y + this.height / 2,
+                        this.direction,
+                        true,
+                        15,
+                        projDirectionX * this.projectileSpeed,
+                        projDirectionY * this.projectileSpeed
+                    );
+
+                    gameObjects.projectiles.push(projectile);
+                }
+
+                playSound('bossRanged');
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+
+                if (this.health <= 0) {
+                    this.die();
+                } else {
+                    // Эффект получения урона
+                    playSound('bossHurt');
+                }
+            }
+
+            die() {
+                gameObjects.boss = null;
+                addScore(1000);
+                gameState.combo++;
+                updateComboDisplay();
+                playSound('bossDeath');
+
+                // Проверка завершения уровня
+                setTimeout(() => {
+                    levelComplete();
+                }, 2000);
+            }
+        }
+
+        // Класс проектиля
+        class Projectile {
+            constructor(x, y, direction, isEnemyProjectile, damage, velocityX = 0, velocityY = 0) {
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 10;
+                this.direction = direction;
+                this.isEnemyProjectile = isEnemyProjectile;
+                this.damage = damage;
+                this.velocityX = velocityX !== 0 ? velocityX : direction * 10;
+                this.velocityY = velocityY;
+                this.lifetime = 40;
+            }
+
+            update() {
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                this.lifetime--;
+
+                return this.lifetime > 0 &&
+                    this.x > -100 &&
+                    this.x < 10000 && // Используем реальные координаты уровня
+                    this.y > -100 &&
+                    this.y < GAME_HEIGHT + 100;
+            }
+
+            draw() {
+                ctx.save();
+
+                if (this.isEnemyProjectile) {
+                    // Снаряд врага - красный круг
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Снаряд игрока - желтый прямоугольник
+                    ctx.fillStyle = 'yellow';
+                    if (this.direction === -1) {
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(Math.PI);
+                        ctx.fillRect(-this.width, -this.height / 2, this.width, this.height);
+                    } else {
+                        ctx.fillRect(this.x, this.y - this.height / 2, this.width, this.height);
+                    }
+                }
+
+                ctx.restore();
+            }
+        }
+        // Класс платформы
+        class Platform {
+            constructor(x, y, width, height, color = '#8B4513') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // Класс препятствия (стена)
+        class Obstacle {
+            constructor(x, y, width, height, color = '#555') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // Класс ключа
+        class Key {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 30;
+                this.height = 30;
+            }
+
+            draw() {
+                ctx.drawImage(sprites.key, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // Класс двери
+        class Door {
+            constructor(x, y, width = 40, height = 80) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.isOpen = false;
+            }
+
+            draw() {
+                if (this.isOpen) {
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                } else {
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = 'gold';
+                    ctx.fillRect(this.x + 10, this.y + this.height / 2 - 15, 20, 30);
+                }
+            }
+        }
+
+        // Класс фона
+        class Background {
+            constructor(image, speed) {
+                this.image = image;
+                this.speed = speed;
+                this.x = 0;
+                // Добавим возможность вертикального смещения
+                this.y = 0;
+                this.height = GAME_HEIGHT;
+            }
+
+            update(cameraX) {
+                this.x = -cameraX * this.speed;
+            }
+
+            draw() {
+                // Рассчитываем сколько раз нужно нарисовать фон
+                const firstX = this.x % this.image.width;
+                const drawCount = Math.ceil(GAME_WIDTH / this.image.width) + 1;
+
+                // Рисуем фон с учетом вертикального выравнивания
+                for (let i = -1; i < drawCount; i++) {
+                    const x = firstX + i * this.image.width;
+                    ctx.drawImage(
+                        this.image,
+                        x,
+                        this.y,
+                        this.image.width,
+                        this.height
+                    );
+                }
+            }
+        }
+        // Функция загрузки изображений
+        function loadImages() {
+            return new Promise((resolve, reject) => {
+                let loaded = 0;
+                const total = 6;
+
+                function onLoad() {
+                    loaded++;
+                    if (loaded === total) {
+                        resolve();
+                    }
+                }
+
+                sprites.player = new Image();
+                sprites.player.src = 'player.gif';
+                sprites.player.onload = onLoad;
+                sprites.player.onerror = reject;
+
+                sprites.enemy1 = new Image();
+                sprites.enemy1.src = 'enemy1.gif';
+                sprites.enemy1.onload = onLoad;
+                sprites.enemy1.onerror = reject;
+
+                sprites.enemy2 = new Image();
+                sprites.enemy2.src = 'enemy2.gif';
+                sprites.enemy2.onload = onLoad;
+                sprites.enemy2.onerror = reject;
+
+                sprites.boss = new Image();
+                sprites.boss.src = 'boss.gif';
+                sprites.boss.onload = onLoad;
+                sprites.boss.onerror = reject;
+
+                sprites.key = new Image();
+                sprites.key.src = 'key.gif';
+                sprites.key.onload = onLoad;
+                sprites.key.onerror = reject;
+
+                // Временный фон, если нет своего
+                sprites.background = new Image();
+                sprites.background.src = 'game_background.png';
+                sprites.background.onload = onLoad;
+                sprites.background.onerror = reject;
+            });
+        }
+
+        // Функция загрузки звуков
+        function loadSounds() {
+            // В реальной игре здесь должна быть загрузка звуковых файлов
+            // Для примера создадим заглушки
+            sounds = {
+                jump: createAudio('sound/jump.wav'),
+                melee: { play: () => { } },
+                ranged: { play: () => { } },
+                hurt: createAudio('sound/hurt.wav'),
+                key: { play: () => { } },
+                door: { play: () => { } },
+                enemyAttack: { play: () => { } },
+                enemyHurt: { play: () => { } },
+                enemyDeath: createAudio('sound/enemyDeath.wav'),
+                enemyRanged: { play: () => { } },
+                bossActivate: { play: () => { } },
+                bossAttack: { play: () => { } },
+                bossHurt: { play: () => { } },
+                bossDeath: createAudio('sound/enemyDeath.wav'),
+                bossRanged: { play: () => { } },
+                bgMusic: createAudio('sound/background.mp3', true)  // true = loop
+            };
+        }
+        // Воспроизведение звука
+        function createAudio(src, loop = false) {
+            const audio = new Audio(src);
+            audio.volume = loop ? 0.4 : 0.6; // Для музыки делаем тише
+            audio.loop = loop;
+            return {
+                audio: audio,  // Сохраняем ссылку на audio элемент
+                play: function () {
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log("Audio error:", e));
+                }
+            };
+        }
+
+
+        function playSound(name) {
+            if (sounds[name]) {
+                sounds[name].play();
+            }
+        }
+
+        function resetGameState() {
+            const defaultState = {
+                score: 0,
+                combo: 0,
+                maxCombo: 0,
+                health: 100,
+                keys: 0,
+                enemiesDefeated: 0,
+                totalEnemies: 0,
+                isBossSpawned: false,
+                isGameOver: false,
+                isPaused: false,
+                startTime: Date.now(),
+                endTime: 0
+            };
+            Object.assign(gameState, defaultState);
+        }
+        // Генерация уровня !!!
+        function generateLevel() {
+            cameraX = 0;
+            // Очистка предыдущих объектов
+            gameObjects.enemies = [];
+            gameObjects.projectiles = [];
+            gameObjects.platforms = [];
+            gameObjects.obstacles = [];
+            gameObjects.keys = [];
+            gameObjects.doors = [];
+            gameObjects.boss = null;
+            gameObjects.deathZones = [];
+            gameObjects.boundaries = [
+                { x: 0, y: 0, width: 10, height: LEVEL_HEIGHT }, // Левая стена
+                { x: LEVEL_WIDTH - 10, y: 0, width: 10, height: LEVEL_HEIGHT }, // Правая стена
+                { x: 0, y: LEVEL_HEIGHT, width: LEVEL_WIDTH, height: 10 } // Пол (если нужно)
+            ];
+
+            // Сброс состояния игры
+            resetGameState();
+
+            // Параметры уровня
+            const levelWidth = 5000;
+            const groundLevel = GAME_HEIGHT - 100;
+            const platformHeight = 20;
+            const minPlatformWidth = 100;
+            const maxPlatformWidth = 200;
+            const maxGap = 250; // Максимальный горизонтальный разрыв между платформами
+            const maxVerticalGap = 300; // Максимальная разница высот
+
+            // Создание фона
+            gameObjects.background = new Background(sprites.background, 0.2);
+
+            // Создание земли (основной платформы)
+            gameObjects.platforms.push(new Platform(0, groundLevel, levelWidth, 100));
+            // Добавляем основную пропасть под уровнем
+            gameObjects.deathZones.push({
+                x: 0,
+                y: groundLevel + 20,
+                width: levelWidth,
+                height: 100,
+                isBottomPit: true
+            });
+
+            // Генерируем случайные пропасти между платформами
+            const minPitWidth = 100;
+            const maxPitWidth = 300;
+            const pitCount = Math.floor(levelWidth / 2000); // 1 пропасть на каждые 2000px
+
+            for (let i = 0; i < pitCount; i++) {
+                const pitWidth = minPitWidth + Math.random() * (maxPitWidth - minPitWidth);
+                const pitX = 500 + Math.random() * (levelWidth - 1000 - pitWidth);
+
+                gameObjects.deathZones.push({
+                    x: pitX,
+                    y: groundLevel - 10, // Немного выше земли
+                    width: pitWidth,
+                    height: 120,
+                    isPit: true
+                });
+            }
+
+            // Гарантированный проходимый путь
+            let currentX = 300;
+            let currentY = groundLevel - 150;
+            let prevPlatformEnd = 0;
+
+            // Создаем цепочку основных платформ
+            while (currentX < levelWidth - 500) {
+                const width = minPlatformWidth + Math.random() * (maxPlatformWidth - minPlatformWidth);
+                const height = platformHeight;
+
+                // Новые координаты с учетом ограничений
+                currentX = prevPlatformEnd + 100 + Math.random() * maxGap;
+                currentY = Math.max(
+                    groundLevel - 400,
+                    Math.min(
+                        groundLevel - 100,
+                        currentY + (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 100)
+                    )
+                );
+
+                gameObjects.platforms.push(new Platform(currentX, currentY, width, height));
+                prevPlatformEnd = currentX + width;
+
+                // 30% chance to add a key on this platform
+                if (Math.random() < 0.3) {
+                    gameObjects.keys.push(new Key(
+                        currentX + width / 2 - 15,
+                        currentY - 30
+                    ));
+                }
+
+                // 40% chance to add an enemy on this platform
+                if (Math.random() < 0.4) {
+                    const enemyType = Math.random() < 0.7 ? 'melee' : 'ranged';
+                    const enemy = enemyType === 'melee'
+                        ? new MeleeEnemy(currentX + 30, currentY - 80)
+                        : new RangedEnemy(currentX + 30, currentY - 80);
+                    gameObjects.enemies.push(enemy);
+                }
+            }
+
+            // Добавляем обязательные двери (3 штуки)
+            const doorPositions = [
+                levelWidth * 0.3,
+                levelWidth * 0.6,
+                levelWidth * 0.8
+            ];
+
+            doorPositions.forEach(x => {
+                gameObjects.doors.push(new Door(x, groundLevel - 80));
+            });
+
+            // Добавляем декоративные препятствия (не блокирующие путь)
+            for (let i = 0; i < 10; i++) {
+                const width = 30 + Math.random() * 40;
+                const height = 50 + Math.random() * 100;
+                const x = 300 + Math.random() * (levelWidth - 600);
+                const y = groundLevel - height;
+
+                // Проверяем, чтобы препятствие не блокировало путь
+                const isBlocking = gameObjects.platforms.some(p =>
+                    x < p.x + p.width &&
+                    x + width > p.x &&
+                    y < p.y + p.height &&
+                    y + height > p.y
+                );
+
+                if (!isBlocking) {
+                    gameObjects.obstacles.push(new Obstacle(x, y, width, height));
+                }
+            }
+
+            // Создаем босса в конце уровня
+            const bossX = levelWidth - 300;
+            gameObjects.boss = new Boss(bossX, groundLevel - 120);
+
+            // Создание игрока
+            gameObjects.player = new Player(100, groundLevel - 80);
+            gameState.totalEnemies = gameObjects.enemies.length;
+
+            updateHUD();
+        }
+
+        // Проверка появления босса
+        function checkBossSpawn() {
+            if (!gameState.isBossSpawned && gameState.enemiesDefeated >= gameState.totalEnemies) {
+                // Размещаем босса в конце уровня
+                const levelWidth = 5000;
+                const groundLevel = GAME_HEIGHT - 100;
+
+                gameObjects.boss = new Boss(levelWidth - 200, groundLevel - 120);
+                gameState.isBossSpawned = true;
+            }
+        }
+
+        // Завершение уровня
+        function levelComplete() {
+            gameState.endTime = Date.now();
+            showGameOver(true);
+        }
+
+        // Конец игры
+        function gameOver() {
+            gameState.endTime = Date.now();
+            gameState.isGameOver = true;
+            showGameOver(false);
+        }
+
+        // Показать экран завершения игры
+        function showGameOver(isVictory) {
+            changeScreen('gameOver');
+            elements.finalScore.textContent = gameState.score;
+
+            if (isVictory) {
+                document.querySelector('#gameOverScreen h1').textContent = 'Level Complete!';
+            } else {
+                document.querySelector('#gameOverScreen h1').textContent = 'Game Over';
+            }
+        }
+
+        // Добавление очков
+        function addScore(amount) {
+            // Увеличение очков в зависимости от комбо
+            const comboMultiplier = 1 + gameState.combo * 0.1;
+            const totalAmount = Math.floor(amount * comboMultiplier);
+
+            gameState.score += totalAmount;
+            updateHUD();
+        }
+
+        // Обновление комбо-дисплея
+        function updateComboDisplay() {
+            if (gameState.combo > 1) {
+                elements.comboCount.textContent = gameState.combo + 'x';
+
+                // Показываем анимацию комбо
+                elements.comboDisplay.textContent = 'COMBO ' + gameState.combo + 'x!';
+                elements.comboDisplay.style.opacity = '1';
+
+                // Обновляем максимальное комбо
+                if (gameState.combo > gameState.maxCombo) {
+                    gameState.maxCombo = gameState.combo;
+                }
+
+                // Скрываем через время
+                setTimeout(() => {
+                    elements.comboDisplay.style.opacity = '0';
+                }, 1000);
+            }
+        }
+
+        // Сброс комбо
+        function resetCombo() {
+            if (gameState.combo > 1) {
+                gameState.combo = 0;
+                elements.comboCount.textContent = '0';
+            }
+        }
+
+        // Обновление HUD
+        function updateHUD() {
+            elements.scoreDisplay.textContent = gameState.score;
+            elements.healthDisplay.textContent = gameState.health;
+            elements.keysDisplay.textContent = gameState.keys;
+        }
+
+        // Изменение экрана
+        function changeScreen(screenName) {
+            // Скрываем все экраны
+            document.querySelectorAll('#gameContainer > div').forEach(div => {
+                div.style.display = 'none';
+            });
+
+            // Показываем нужный экран
+            switch (screenName) {
+                case 'menu':
+                    elements.menuScreen.style.display = 'flex';
+                    break;
+                case 'game':
+                    elements.gameScreen.style.display = 'flex';
+                    break;
+                case 'gameOver':
+                    elements.gameOverScreen.style.display = 'flex';
+                    break;
+                case 'settings':
+                    elements.settingsScreen.style.display = 'flex';
+                    break;
+                case 'topScores':
+                    elements.topScoresScreen.style.display = 'flex';
+                    showTopScores();
+                    break;
+            }
+
+            gameState.currentScreen = screenName;
+        }
+
+        // Сохранение настроек управления
+        function saveControls() {
+            localStorage.setItem('gameControls', JSON.stringify(controls));
+        }
+
+        // Загрузка настроек управления
+        function loadControls() {
+            const savedControls = localStorage.getItem('gameControls');
+            if (savedControls) {
+                Object.assign(controls, JSON.parse(savedControls));
+            }
+
+            // Обновление отображения в меню настроек
+            elements.leftKey.value = controls.left;
+            elements.rightKey.value = controls.right;
+            elements.jumpKey.value = controls.jump;
+            elements.meleeKey.value = controls.melee;
+            elements.rangedKey.value = controls.ranged;
+        }
+
+        // Сброс настроек управления
+        function resetControls() {
+            controls.left = 'ArrowLeft';
+            controls.right = 'ArrowRight';
+            controls.jump = 'ArrowUp';
+            controls.melee = 'KeyZ';
+            controls.ranged = 'KeyX';
+
+            saveControls();
+            loadControls();
+        }
+
+        // Сохранение результата
+        function saveScore() {
+            const name = elements.playerName.value.trim() || 'Player';
+            const time = Math.floor((gameState.endTime - gameState.startTime) / 1000);
+
+            const scoreEntry = {
+                name: name,
+                score: gameState.score,
+                time: time,
+                date: new Date().toISOString()
+            };
+
+            // Получаем текущие результаты (с обработкой случая, когда в localStorage ничего нет)
+            let topScores = [];
+            try {
+                const savedScores = localStorage.getItem('topScores');
+                if (savedScores) {
+                    topScores = JSON.parse(savedScores);
+                }
+            } catch (e) {
+                console.error('Error parsing saved scores:', e);
+                topScores = [];
+            }
+
+            // Добавляем новый результат
+            topScores.push(scoreEntry);
+
+            // Сортируем по очкам (по убыванию)
+            topScores.sort((a, b) => b.score - a.score);
+
+            // Оставляем только топ-10
+            if (topScores.length > 10) {
+                topScores = topScores.slice(0, 10);
+            }
+
+            // Сохраняем
+            localStorage.setItem('topScores', JSON.stringify(topScores));
+
+            // Возвращаемся в меню
+            changeScreen('menu');
+        }
+
+        // Показать таблицу рекордов
+        function showTopScores() {
+            let topScores = [];
+            try {
+                const savedScores = localStorage.getItem('topScores');
+                if (savedScores) {
+                    topScores = JSON.parse(savedScores);
+                }
+            } catch (e) {
+                console.error('Ошибка закгрузки очков!:', e);
+            }
+
+            const tbody = elements.topScoresBody;
+            tbody.innerHTML = '';
+
+            topScores.forEach((entry, index) => {
+                const row = document.createElement('tr');
+
+                const rankCell = document.createElement('td');
+                rankCell.textContent = index + 1;
+                row.appendChild(rankCell);
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = entry.name;
+                row.appendChild(nameCell);
+
+                const scoreCell = document.createElement('td');
+                scoreCell.textContent = entry.score;
+                row.appendChild(scoreCell);
+
+                const timeCell = document.createElement('td');
+                timeCell.textContent = `${entry.time} sec`;
+                row.appendChild(timeCell);
+
+                tbody.appendChild(row);
+            });
+        }
+        // Основной игровой цикл
+        function gameLoop() {
+            if (gameState.currentScreen !== 'game' || gameState.isPaused || gameState.isGameOver) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            // Очистка canvas
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Вычисление позиции камеры
+            //const cameraX = Math.max(0, Math.min(cameraX, levelWidth - GAME_WIDTH));
+            const cameraX = Math.max(0, gameObjects.player.x - SCROLL_THRESHOLD);
+            //const playerScreenX = gameObjects.player.x - cameraX;
+            //if (playerScreenX > SCROLL_THRESHOLD) {
+            //    cameraX = gameObjects.player.x - SCROLL_THRESHOLD;
+            //} else if (playerScreenX < SCROLL_THRESHOLD * 0.3) {
+            //    cameraX = gameObjects.player.x - SCROLL_THRESHOLD * 0.3;
+            //}
+
+            // Ограничиваем камеру границами уровня
+
+            // Сохраняем контекст и применяем трансформацию камеры
+            ctx.save();
+            ctx.translate(-cameraX, 0);
+
+            // Отрисовка ВСЕХ игровых объектов с учетом камеры
+            gameObjects.background.update(cameraX);
+            gameObjects.background.draw();
+
+            // Отрисовка статичных объектов
+            gameObjects.platforms.forEach(p => p.draw());
+            gameObjects.obstacles.forEach(o => o.draw());
+            gameObjects.doors.forEach(d => d.draw());
+            gameObjects.keys.forEach(k => k.draw());
+            gameObjects.deathZones.forEach(zone => {
+                // Градиент для эффекта глубины
+                const gradient = ctx.createLinearGradient(zone.x, zone.y, zone.x, zone.y + zone.height);
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+                gradient.addColorStop(1, 'rgba(150, 0, 0, 0.5)');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
+
+                // Добавим узор или текстуру
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+                ctx.lineWidth = 2;
+                for (let y = zone.y; y < zone.y + zone.height; y += 15) {
+                    ctx.beginPath();
+                    ctx.moveTo(zone.x, y);
+                    ctx.lineTo(zone.x + zone.width, y);
+                    ctx.stroke();
+                }
+            });
+
+            // Отрисовка врагов и босса
+            gameObjects.enemies.forEach(e => {
+                e.update();
+                e.draw();
+            });
+
+            if (gameObjects.boss) {
+                gameObjects.boss.update();
+                gameObjects.boss.draw();
+            }
+
+            // Отрисовка проектилей (теперь внутри трансформации камеры)
+            gameObjects.projectiles.forEach(p => {
+                if (p.update()) { // Если проектиль еще "жив"
+                    p.draw();
+                }
+            });
+
+            // Отрисовка игрока (поверх всего)
+            gameObjects.player.update();
+            gameObjects.player.draw();
+
+            // Восстанавливаем контекст
+            ctx.restore();
+
+            // Отрисовка HUD (без смещения камеры)
+            updateHUD();
+
+            // Удаляем "мертвые" проекции
+            gameObjects.projectiles = gameObjects.projectiles.filter(p => p.lifetime > 0);
+            //updateGameObjects(); // Должно обновляться с постоянной скоростью
+
+            requestAnimationFrame(gameLoop);
+        }
+        // Обработка клавиатуры
+        function handleKeyDown(e) {
+            if (gameState.currentScreen === 'game' && !gameState.isPaused && !gameState.isGameOver) {
+                const player = gameObjects.player;
+
+                if (e.code === controls.left) {
+                    player.velocityX = -PLAYER_SPEED;
+                    player.direction = -1;
+                } else if (e.code === controls.right) {
+                    player.velocityX = PLAYER_SPEED;
+                    player.direction = 1;
+                } else if (e.code === controls.jump) {
+                    player.jump();
+                } else if (e.code === controls.melee) {
+                    player.isAttacking = true;
+                } else if (e.code === controls.ranged) {
+                    player.performRangedAttack();
+                } else if (e.code === 'Escape') {
+                    gameState.isPaused = !gameState.isPaused;
+                }
+            }
+        }
+
+        function handleKeyUp(e) {
+            if (gameState.currentScreen === 'game' && !gameState.isPaused && !gameState.isGameOver) {
+                const player = gameObjects.player;
+
+                if (e.code === controls.left && player.velocityX < 0) {
+                    player.velocityX = 0;
+                } else if (e.code === controls.right && player.velocityX > 0) {
+                    player.velocityX = 0;
+                } else if (e.code === controls.melee) {
+                    player.isAttacking = false;
+                }
+            }
+        }
+
+        // Обработка нажатий в меню настроек
+        function handleSettingsKeyDown(e) {
+            if (gameState.currentScreen === 'settings') {
+                const activeElement = document.activeElement;
+
+                if (activeElement && activeElement.classList.contains('settings-input')) {
+                    activeElement.value = e.code;
+                    e.preventDefault();
+
+                    // Обновляем соответствующую клавишу управления
+                    if (activeElement === elements.leftKey) {
+                        controls.left = e.code;
+                    } else if (activeElement === elements.rightKey) {
+                        controls.right = e.code;
+                    } else if (activeElement === elements.jumpKey) {
+                        controls.jump = e.code;
+                    } else if (activeElement === elements.meleeKey) {
+                        controls.melee = e.code;
+                    } else if (activeElement === elements.rangedKey) {
+                        controls.ranged = e.code;
+                    }
+                }
+            }
+        }
+
+        // Функция загрузки кастомного уровня
+        function loadCustomLevel(levelData) {
+            // Полная очистка предыдущего уровня
+            cameraX = 0;
+            gameObjects.enemies = [];
+            gameObjects.projectiles = [];
+            gameObjects.platforms = [];
+            gameObjects.obstacles = [];
+            gameObjects.keys = [];
+            gameObjects.doors = [];
+            gameObjects.boss = null;
+            gameObjects.deathZones = [];
+
+            // Сброс состояния игры
+            resetGameState();
+
+            // Создание земли (основной платформы)
+            gameObjects.platforms.push(new Platform(0, levelData.height - 100, levelData.width, 100));
+
+            // Создание объектов из файла
+            levelData.objects.forEach(obj => {
+                switch (obj.type) {
+                    case 'platform':
+                        gameObjects.platforms.push(new Platform(obj.x, obj.y, obj.width, obj.height));
+                        break;
+
+                    case 'enemy1':
+                        gameObjects.enemies.push(new MeleeEnemy(obj.x, obj.y - 80)); // -80 чтобы стоял на платформе
+                        break;
+
+                    case 'enemy2':
+                        gameObjects.enemies.push(new RangedEnemy(obj.x, obj.y - 80));
+                        break;
+
+                    case 'key':
+                        gameObjects.keys.push(new Key(obj.x, obj.y));
+                        break;
+
+                    case 'door':
+                        gameObjects.doors.push(new Door(obj.x, obj.y));
+                        break;
+
+                    case 'boss':
+                        gameObjects.boss = new Boss(obj.x, obj.y - 120);
+                        break;
+                }
+            });
+
+            // Добавляем основную пропасть под уровнем
+            gameObjects.deathZones.push({
+                x: 0,
+                y: levelData.height,
+                width: levelData.width,
+                height: 100,
+                isBottomPit: true
+            });
+
+            // Создание игрока
+            gameObjects.player = new Player(100, levelData.height - 180);
+            gameState.totalEnemies = gameObjects.enemies.length;
+
+            // Создание фона
+            gameObjects.background = new Background(sprites.background, 0.3);
+
+            // Обновление HUD
+            updateHUD();
+
+            console.log('Level loaded:', levelData); // Для отладки
+        }
+
+        // Инициализация игры
+        async function init() {
+            // Загрузка изображений
+            await loadImages();
+
+            // Загрузка звуков
+            loadSounds();
+
+            // Загрузка настроек управления
+            loadControls();
+
+            // Настройка обработчиков событий
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+            window.addEventListener('keydown', handleSettingsKeyDown);
+
+            // Обработка кнопок меню
+            elements.musicToggle = document.getElementById('musicToggle');
+            elements.musicToggle.addEventListener('click', toggleMusic);
+            elements.editorButton.addEventListener('click', () => {
+                window.open('editor.html', '_blank');
+            });
+            elements.customLevelsButton.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        const levelData = JSON.parse(await file.text());
+
+                        if (!levelData.objects || !levelData.width) {
+                            throw new Error('Invalid level format');
+                        }
+
+                        loadCustomLevel(levelData);
+                        changeScreen('game');
+
+                        // Если игровой цикл не запущен
+                        if (!window.gameLoopRunning) {
+                            window.gameLoopRunning = true;
+                            gameLoop();
+                        }
+
+                    } catch (error) {
+                        alert('Error loading level: ' + error.message);
+                        console.error('Level loading error:', error);
+                    }
+                };
+
+                input.click();
+            });
+            elements.startButton.addEventListener('click', () => {
+                generateLevel();
+                changeScreen('game');
+                gameLoop();
+            });
+
+            elements.settingsButton.addEventListener('click', () => {
+                changeScreen('settings');
+            });
+
+            elements.topScoresButton.addEventListener('click', () => {
+                changeScreen('topScores');
+            });
+
+            elements.saveScoreButton.addEventListener('click', saveScore);
+            elements.menuButton.addEventListener('click', () => changeScreen('menu'));
+
+            elements.saveSettingsButton.addEventListener('click', () => {
+                saveControls();
+                changeScreen('menu');
+            });
+
+            elements.defaultSettingsButton.addEventListener('click', resetControls);
+            elements.backToMenuButton.addEventListener('click', () => changeScreen('menu'));
+            elements.backToMenuFromScores.addEventListener('click', () => changeScreen('menu'));
+
+            // Показываем меню
+            changeScreen('menu');
+            //setupMusicStart();
+        }
+        /*function setupMusicStart() {
+            const startMusic = () => {
+                sounds.bgMusic.play();
+                document.removeEventListener('click', startMusic);
+                document.removeEventListener('keydown', startMusic);
+            };
+
+            // Ждем первого клика или нажатия клавиши
+            document.addEventListener('click', startMusic);
+            document.addEventListener('keydown', startMusic);
+        }*/
+        function toggleMusic() {
+            if (sounds.bgMusic.audio.paused) {
+                sounds.bgMusic.audio.play();
+                //elements.musicToggle.textContent = "Музыка: Вкл";
+                //elements.musicToggle.classList.remove('music-off');
+            } else {
+                sounds.bgMusic.audio.pause();
+                //elements.musicToggle.textContent = "Музыка: Выкл";
+                //elements.musicToggle.classList.add('music-off');
+            }
+        }
+
+        // Запуск игры
+        init();
+    </script>
+</body>
+
+</html>

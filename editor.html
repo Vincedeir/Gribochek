@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Редактор уровней</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #editor {
+            display: flex;
+            height: 100vh;
+        }
+
+        #palette {
+            width: 200px;
+            background: #eee;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: auto;
+        }
+
+        #level-canvas {
+            background: #000;
+            display: block;
+        }
+
+        .palette-item {
+            margin: 10px;
+            padding: 5px;
+            background: #ddd;
+            cursor: pointer;
+        }
+
+        button {
+            margin: 5px;
+            padding: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        #status {
+            position: fixed;
+            bottom: 10px;
+            left: 210px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="editor">
+        <div id="palette">
+            <div class="palette-item" data-type="platform">Платформа</div>
+            <div class="palette-item" data-type="enemy1">Враг ближний</div>
+            <div class="palette-item" data-type="enemy2">Враг дальний</div>
+            <div class="palette-item" data-type="key">Ключ</div>
+            <div class="palette-item" data-type="deathzone">Пропасть</div>
+            <div class="palette-item" data-type="door">Дверь</div>
+            <div class="palette-item" data-type="boss">Босс</div>
+            <button id="save-btn">Сохранить уровень</button>
+            <button id="test-btn">Тестировать уровень</button>
+            <button id="loadLevelButton">Загрузить уровень</button>
+            <button id="clear-btn">Очистить уровень</button>
+            <button id="delete-btn">Удалить объект (Shift+Click)</button>
+            <div style="margin-top: 20px;">
+                <div>Масштаб: <span id="zoom-value">100%</span></div>
+                <input type="range" id="zoom-slider" min="50" max="200" value="100">
+            </div>
+        </div>
+        <div id="canvas-container">
+            <canvas id="level-canvas" width="5000" height="720"></canvas>
+        </div>
+        <div id="status">Режим: добавление | X: 0, Y: 0</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('level-canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvas-container');
+        const statusDiv = document.getElementById('status');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomValue = document.getElementById('zoom-value');
+
+        let selectedType = null;
+        let objects = [];
+        let isDragging = false;
+        let currentObject = null;
+        let cameraOffset = { x: 0, y: 0 };
+        let isDeleteMode = false;
+        let zoom = 1;
+
+        // Инициализация
+        function init() {
+            // Установка размеров canvas
+            resizeCanvas();
+
+            // Обработчики выбора элементов
+            document.querySelectorAll('.palette-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    selectedType = item.dataset.type;
+                    isDeleteMode = false;
+                    updateStatus();
+                });
+            });
+
+            // Обработчик кнопки удаления
+            document.getElementById('delete-btn').addEventListener('click', () => {
+                isDeleteMode = true;
+                selectedType = null;
+                updateStatus();
+            });
+
+            // Обработчики canvas
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseup', handleCanvasMouseUp);
+            canvas.addEventListener('wheel', handleCanvasWheel);
+
+            // Обработчик изменения масштаба
+            zoomSlider.addEventListener('input', (e) => {
+                zoom = parseInt(e.target.value) / 100;
+                zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+                resizeCanvas();
+                drawLevel();
+            });
+
+            // Обработчик прокрутки контейнера
+            canvasContainer.addEventListener('scroll', () => {
+                cameraOffset.x = canvasContainer.scrollLeft / zoom;
+                cameraOffset.y = canvasContainer.scrollTop / zoom;
+                drawLevel();
+            });
+
+            // Обработчики кнопок
+            document.getElementById('clear-btn').addEventListener('click', clearLevel);
+            document.getElementById('loadLevelButton').addEventListener('click', loadLevelFromFile);
+            document.getElementById('save-btn').addEventListener('click', saveLevel);
+            document.getElementById('test-btn').addEventListener('click', testLevel);
+
+            // Первоначальная отрисовка
+            drawLevel();
+        }
+
+        function resizeCanvas() {
+            canvas.style.width = `${canvas.width * zoom}px`;
+            canvas.style.height = `${canvas.height * zoom}px`;
+        }
+
+        function handleCanvasMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom + cameraOffset.x;
+            const y = (e.clientY - rect.top) / zoom + cameraOffset.y;
+
+            if (isDeleteMode) {
+                // Режим удаления
+                const objectToDelete = findObjectAtPosition(x, y);
+                if (objectToDelete) {
+                    objects = objects.filter(obj => obj !== objectToDelete);
+                    drawLevel();
+                }
+            } else if (selectedType) {
+                // Режим добавления
+                isDragging = true;
+                currentObject = {
+                    type: selectedType,
+                    x: x,
+                    y: y,
+                    width: selectedType === 'platform' ? 200 : 50,
+                    height: selectedType === 'platform' ? 20 : 50
+                };
+                objects.push(currentObject);
+                drawLevel();
+            } else if (selectedType === 'deathzone') {
+                currentObject = {
+                    type: 'deathzone',
+                    x: x,
+                    y: y,
+                    width: 100,
+                    height: 50,
+                    isPit: true,
+                    color: 'rgba(255, 0, 0, 0.5)'
+                };
+                objects.push(currentObject);
+                drawLevel();
+
+            }
+
+            updateStatus(x, y);
+        }
+
+        function handleCanvasMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom + cameraOffset.x;
+            const y = (e.clientY - rect.top) / zoom + cameraOffset.y;
+
+            if (isDragging && currentObject) {
+                currentObject.width = x - currentObject.x;
+                currentObject.height = y - currentObject.y;
+                drawLevel();
+            }
+
+            updateStatus(x, y);
+        }
+
+        function handleCanvasMouseUp() {
+            isDragging = false;
+            currentObject = null;
+        }
+
+        function handleCanvasWheel(e) {
+            if (e.ctrlKey) {
+                // Изменение масштаба колесом мыши с Ctrl
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -10 : 10;
+                const newZoom = Math.min(200, Math.max(50, zoom * 100 + delta)) / 100;
+                zoomSlider.value = newZoom * 100;
+                zoom = newZoom;
+                zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+                resizeCanvas();
+                drawLevel();
+            }
+        }
+
+        function findObjectAtPosition(x, y) {
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                if (x >= obj.x && x <= obj.x + obj.width &&
+                    y >= obj.y && y <= obj.y + obj.height) {
+                    return obj;
+                }
+            }
+            return null;
+        }
+
+        function updateStatus(x, y) {
+            let statusText = `Режим: ${isDeleteMode ? 'удаление' : selectedType ? `добавление (${selectedType})` : 'не выбран'}`;
+            if (x !== undefined && y !== undefined) {
+                statusText += ` | X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+            }
+            statusDiv.textContent = statusText;
+        }
+
+        function clearLevel() {
+            objects = [];
+            drawLevel();
+            updateStatus();
+        }
+
+        function loadLevelFromFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const levelData = JSON.parse(await file.text());
+
+                    if (!levelData.objects || !levelData.width) {
+                        throw new Error('Неверный формат уровня');
+                    }
+                    
+                    clearLevel();
+                    objects = levelData.objects;
+                    canvas.width = levelData.width;
+                    canvas.height = levelData.height;
+                    resizeCanvas();
+                    drawLevel();
+
+                } catch (error) {
+                    alert('Ошибка загрузки уровня: ' + error.message);
+                    console.error('Level loading error:', error);
+                }
+            };
+
+            input.click();
+        }
+
+        function saveLevel() {
+            const levelName = prompt('Введите название уровня:', 'my_level');
+            if (levelName) {
+                const levelData = {
+                    objects: objects,
+                    width: canvas.width,
+                    height: canvas.height,
+                };
+
+                const blob = new Blob([JSON.stringify(levelData, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${levelName}.json`;
+                a.click();
+            }
+        }
+
+        function testLevel() {
+            const levelData = {
+                objects: objects,
+                width: canvas.width,
+                height: canvas.height
+            };
+
+            localStorage.setItem('testLevel', JSON.stringify(levelData));
+            window.open('game3.html?testLevel=true', '_blank');
+        }
+
+        function drawLevel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Сохраняем текущее состояние контекста
+            ctx.save();
+
+            // Применяем масштабирование
+            ctx.scale(zoom, zoom);
+            ctx.translate(-cameraOffset.x, -cameraOffset.y);
+
+            // Рисуем сетку для удобства
+            drawGrid();
+
+            // Рисуем объекты
+            objects.forEach(obj => {
+                if (obj.type === 'deathzone') {
+                    ctx.fillStyle = obj.color || 'rgba(255, 0, 0, 0.5)';
+                    ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+                    ctx.fillStyle = '#000';
+                    ctx.fillText('Пропасть', obj.x + 5, obj.y + 15);
+                } else {
+                    ctx.fillStyle = getColorForType(obj.type);
+                    ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+                    // Подпись типа объекта
+                    ctx.fillStyle = '#000';
+                    ctx.font = `${12 / zoom}px Arial`;
+                    ctx.fillText(obj.type, obj.x + 5, obj.y + 15);
+                }
+            });
+
+            // Восстанавливаем состояние контекста
+            ctx.restore();
+        }
+
+        function drawGrid() {
+            const gridSize = 50;
+            const startX = Math.floor(cameraOffset.x / gridSize) * gridSize;
+            const startY = Math.floor(cameraOffset.y / gridSize) * gridSize;
+            const endX = startX + canvas.width / zoom + gridSize;
+            const endY = startY + canvas.height / zoom + gridSize;
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+
+            // Вертикальные линии
+            for (let x = startX; x <= endX; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, endY);
+                ctx.stroke();
+            }
+
+            // Горизонтальные линии
+            for (let y = startY; y <= endY; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(startX, y);
+                ctx.lineTo(endX, y);
+                ctx.stroke();
+            }
+        }
+
+        function getColorForType(type) {
+            const colors = {
+                platform: '#8B4513',
+                enemy1: '#FF0000',
+                enemy2: '#FF4500',
+                key: '#FFD700',
+                door: '#654321',
+                boss: '#800080',
+                deathzone: 'rgba(255, 0, 0, 0.5)' // Полупрозрачная красная зона
+            };
+            return colors[type] || '#FFFFFF';
+        }
+
+        // Запускаем редактор
+        init();
+    </script>
+</body>
+
+</html>

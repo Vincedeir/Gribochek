@@ -259,6 +259,7 @@
         const PLAYER_SPEED = 5;
         const JUMP_FORCE = -17;
         let cameraX = 0;
+        let gameLoopId = null; // Идентификатор запроса анимации
 
         // Состояние игры
         const gameState = {
@@ -1621,7 +1622,9 @@
             };
             Object.assign(gameState, defaultState);
         }
+
         // Генерация уровня !!!
+
         function generateLevel() {
             cameraX = 0;
             // Очистка предыдущих объектов
@@ -1755,12 +1758,12 @@
                 }
             }
 
-           
+
             // Создание игрока
             gameObjects.player = new Player(100, groundLevel - 80);
             gameState.totalEnemies = gameObjects.enemies.length; // Считаем количество врагов
             gameState.isBossSpawned = false; // Сбросить флаг появления босса
-           
+
 
             updateHUD();
         }
@@ -2001,12 +2004,14 @@
                 tbody.appendChild(row);
             });
         }
+
         // Основной игровой цикл
         function gameLoop() {
             if (gameState.currentScreen !== 'game' || gameState.isPaused || gameState.isGameOver) {
-                requestAnimationFrame(gameLoop);
+                gameLoopId = requestAnimationFrame(gameLoop);
                 return;
             }
+            
 
             // Очистка canvas
             ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -2088,8 +2093,16 @@
             gameObjects.projectiles = gameObjects.projectiles.filter(p => p.lifetime > 0);
             //updateGameObjects(); // Должно обновляться с постоянной скоростью
 
-            requestAnimationFrame(gameLoop);
+            gameLoopId = requestAnimationFrame(gameLoop);
         }
+
+        function stopGameLoop() {
+            if (gameLoopId !== null) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+        }
+
         // Обработка клавиатуры
         function handleKeyDown(e) {
             if (gameState.currentScreen === 'game' && e.code === 'Escape') {

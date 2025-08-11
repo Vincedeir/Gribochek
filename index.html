@@ -1416,8 +1416,7 @@
                 } else {
                     // Эффект получения урона
                     playSound('bossHurt');
-                    gameState.combo++;
-                    updateComboDisplay();
+                    addScore(100);
                 }
             }
 

@@ -247,7 +247,7 @@
     </div>
 
     <script>
-        //window.gameLoopRunning = false;
+        window.gameLoopRunning = false;
         // Основные константы игры
         const GAME_WIDTH = window.innerWidth;
         const GAME_HEIGHT = window.innerHeight;
@@ -258,6 +258,7 @@
         const GRAVITY = 0.5;
         const PLAYER_SPEED = 5;
         const JUMP_FORCE = -17;
+        let cameraX = 0;
 
         // Состояние игры
         const gameState = {
@@ -2232,7 +2233,7 @@
             window.addEventListener('keydown', handleSettingsKeyDown);
 
             // Обработка кнопок меню
-            //Кнопка паузы на паузскрине
+            //Кнопка паузы и запуска на паузскрине
             elements.resumeButton.addEventListener('click', () => {
                 gameState.isPaused = false;
                 elements.pauseScreen.style.display = 'none';
@@ -2261,7 +2262,7 @@
                         const levelData = JSON.parse(await file.text());
 
                         if (!levelData.objects || !levelData.width) {
-                            throw new Error('Invalid level format');
+                            throw new Error('Руки крюки, неправильный формат уровня');
                         }
 
                         loadCustomLevel(levelData);
@@ -2274,8 +2275,8 @@
                         }
 
                     } catch (error) {
-                        alert('Error loading level: ' + error.message);
-                        console.error('Level loading error:', error);
+                        alert('Не буду так загружать: ' + error.message);
+                        console.error('Уровень не грузится:', error);
                     }
                 };
 
@@ -2309,19 +2310,8 @@
 
             // Показываем меню
             changeScreen('menu');
-            //setupMusicStart();
         }
-        /*function setupMusicStart() {
-            const startMusic = () => {
-                sounds.bgMusic.play();
-                document.removeEventListener('click', startMusic);
-                document.removeEventListener('keydown', startMusic);
-            };
-
-            // Ждем первого клика или нажатия клавиши
-            document.addEventListener('click', startMusic);
-            document.addEventListener('keydown', startMusic);
-        }*/
+        
         function toggleMusic() {
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();

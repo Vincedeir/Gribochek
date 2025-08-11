@@ -327,6 +327,7 @@
             defaultSettingsButton: document.getElementById('defaultSettingsButton'),
             backToMenuButton: document.getElementById('backToMenuButton'),
             backToMenuFromScores: document.getElementById('backToMenuFromScores'),
+            musicToggle: document.getElementById('musicToggle'),
             leftKey: document.getElementById('leftKey'),
             rightKey: document.getElementById('rightKey'),
             jumpKey: document.getElementById('jumpKey'),
@@ -2215,7 +2216,6 @@
             window.addEventListener('keydown', handleSettingsKeyDown);
 
             // Обработка кнопок меню
-            elements.musicToggle = document.getElementById('musicToggle');
             elements.musicToggle.addEventListener('click', toggleMusic);
             elements.editorButton.addEventListener('click', () => {
                 window.open('editor.html', '_blank');
@@ -2297,11 +2297,11 @@
         function toggleMusic() {
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();
-                //elements.musicToggle.textContent = "Музыка: Вкл";
+                elements.musicToggle.textContent = "Музыка: Вкл";
                 //elements.musicToggle.classList.remove('music-off');
             } else {
                 sounds.bgMusic.audio.pause();
-                //elements.musicToggle.textContent = "Музыка: Выкл";
+                elements.musicToggle.textContent = "Музыка: Выкл";
                 //elements.musicToggle.classList.add('music-off');
             }
         }

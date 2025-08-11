@@ -227,14 +227,14 @@
         <div id="comboDisplay"></div>
 
         <div id="menuScreen">
-            <h1><img src="name.png" /></h1>
-            <button class="menu-button" id="startButton"><img src="newgame.png" /></button>
-            <button class="menu-button" id="customLevelsButton"><img src="loadgame.png" /></button>
-            <button class="menu-button" id="editorButton"><img src="editor.png" /></button>
-            <button class="menu-button" id="settingsButton"><img src="settings.png" /></button>
-            <button class="menu-button" id="musicToggle"><img src="music.png" /> <img id="mutebg"
-                    src="off.png" /></button>
-            <button class="menu-button" id="topScoresButton"><img src="topten.png" /></button>
+            <h1><img src="img/name.png" /></h1>
+            <button class="menu-button" id="startButton"><img src="img/newgame.png" /></button>
+            <button class="menu-button" id="customLevelsButton"><img src="img/loadgame.png" /></button>
+            <button class="menu-button" id="editorButton"><img src="img/editor.png" /></button>
+            <button class="menu-button" id="settingsButton"><img src="img/settings.png" /></button>
+            <button class="menu-button" id="musicToggle"><img src="img/music.png" /> <img id="mutebg"
+                    src="img/off.png" /></button>
+            <button class="menu-button" id="topScoresButton"><img src="img/topten.png" /></button>
         </div>
 
         <div id="gameScreen">
@@ -1625,7 +1625,7 @@
 
                 // Временный фон, если нет своего
                 sprites.background = new Image();
-                sprites.background.src = 'game_background.png';
+                sprites.background.src = 'img/game_background.png';
                 sprites.background.onload = onLoad;
                 sprites.background.onerror = reject;
             });
@@ -2420,13 +2420,13 @@
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();
                 offimage = document.getElementById('mutebg');
-                offimage.src = 'on.png';
+                offimage.src = 'img/on.png';
                 //elements.musicToggle.textContent = "Музыка: Вкл";
                 //elements.musicToggle.classList.remove('music-off');
             } else {
                 sounds.bgMusic.audio.pause();
                 offimage = document.getElementById('mutebg');
-                offimage.src = 'off.png';
+                offimage.src = 'img/off.png';
                 //elements.musicToggle.textContent = "Музыка: Выкл";
                 //elements.musicToggle.classList.add('music-off');
             }

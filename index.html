@@ -177,7 +177,7 @@
             <button class="menu-button" id="editorButton">Редактор Уровней</button>
             <button class="menu-button" id="settingsButton">Настройки</button>
             <button class="menu-button" id="musicToggle">Музыка: Выкл</button>
-            <button class="menu-button" id="topScoresButton">ТОП 10 споров</button>
+            <button class="menu-button" id="topScoresButton">ТОП 10 Грибочков</button>
         </div>
 
         <div id="gameScreen">
@@ -187,7 +187,7 @@
         <div id="gameOverScreen">
             <h1>Game Over</h1>
             <p>Твои споры: <span id="finalScore">0</span></p>
-            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            <input type="text" id="playerName" placeholder=" Кто ты воин.." maxlength="20">
             <button class="menu-button" id="saveScoreButton">Сохранить</button>
             <button class="menu-button" id="menuButton">Обратно в Меню</button>
         </div>
@@ -1570,7 +1570,7 @@
                 melee: createAudio('sound/melee.wav'),
                 ranged: createAudio('sound/ranged.wav'),
                 hurt: createAudio('sound/hurt.wav'),
-                key: { play: () => { } },
+                key: createAudio('sound/key.wav'),
                 door: { play: () => { } },
                 enemyAttack: { play: () => { } },
                 enemyHurt: { play: () => { } },

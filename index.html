@@ -316,6 +316,7 @@
             gameCanvas: document.getElementById('gameCanvas'),
             menuScreen: document.getElementById('menuScreen'),
             gameScreen: document.getElementById('gameScreen'),
+            pauseScreen: document.getElementById('pauseScreen'),
             gameOverScreen: document.getElementById('gameOverScreen'),
             settingsScreen: document.getElementById('settingsScreen'),
             topScoresScreen: document.getElementById('topScoresScreen'),
@@ -336,6 +337,8 @@
             saveSettingsButton: document.getElementById('saveSettingsButton'),
             defaultSettingsButton: document.getElementById('defaultSettingsButton'),
             backToMenuButton: document.getElementById('backToMenuButton'),
+            resumeButton: document.getElementById('resumeButton'),
+            menuFromPauseButton: document.getElementById('menuFromPauseButton'),
             backToMenuFromScores: document.getElementById('backToMenuFromScores'),
             musicToggle: document.getElementById('musicToggle'),
             leftKey: document.getElementById('leftKey'),
@@ -343,10 +346,7 @@
             jumpKey: document.getElementById('jumpKey'),
             meleeKey: document.getElementById('meleeKey'),
             rangedKey: document.getElementById('rangedKey'),
-            topScoresBody: document.getElementById('topScoresBody'),
-            pauseScreen: document.getElementById('pauseScreen'),
-            resumeButton: document.getElementById('resumeButton'),
-            menuFromPauseButton: document.getElementById('menuFromPauseButton')
+            topScoresBody: document.getElementById('topScoresBody')
         };
 
         // Контекст canvas
@@ -1869,6 +1869,9 @@
             document.querySelectorAll('#gameContainer > div').forEach(div => {
                 div.style.display = 'none';
             });
+            if (screenName !== 'game') {
+                stopGameLoop(); // Остановить цикл, если уходим с игрового экрана
+            }
 
             // Показываем нужный экран
             switch (screenName) {
@@ -2011,7 +2014,7 @@
                 gameLoopId = requestAnimationFrame(gameLoop);
                 return;
             }
-            
+
 
             // Очистка canvas
             ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -2295,7 +2298,8 @@
                         // Если игровой цикл не запущен
                         if (!window.gameLoopRunning) {
                             window.gameLoopRunning = true;
-                            gameLoop();
+                            stopGameLoop(); // Остановить предыдущий цикл
+                            gameLoop(); // Запустить новый цикл
                         }
 
                     } catch (error) {
@@ -2307,9 +2311,10 @@
                 input.click();
             });
             elements.startButton.addEventListener('click', () => {
-                generateLevel();
-                changeScreen('game');
-                gameLoop();
+                stopGameLoop(); // Стоп предыдущий цикл
+                generateLevel(); //Генерируем уровень
+                changeScreen('game'); //Смена экрана на игровой
+                gameLoop(); // Старт новый цикл
             });
 
             elements.settingsButton.addEventListener('click', () => {

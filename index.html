@@ -1416,13 +1416,12 @@
                 } else {
                     // Эффект получения урона
                     playSound('bossHurt');
+                    gameState.combo++;
+                    updateComboDisplay();
                 }
             }
 
             die() {
-                
-                gameState.combo++;
-                updateComboDisplay();
                 gameObjects.boss = null;
                 playSound('bossDeath');
 

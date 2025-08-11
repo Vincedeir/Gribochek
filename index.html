@@ -1880,19 +1880,7 @@
         // Завершение уровня
         function levelComplete() {
             gameState.endTime = Date.now();
-            
-            const animateCamera = () => {
-                const targetX = gameObjects.player.x - SCROLL_THRESHOLD;
-                cameraX += (targetX - cameraX) * 0.1;
-
-                if (Math.abs(targetX - cameraX) > 1) {
-                    requestAnimationFrame(animateCamera);
-                } else {
-                    showGameOver(true);
-                }
-            };
             gameState.isGameOver = true;
-            animateCamera();
             showGameOver(true);
         }
 
@@ -1909,9 +1897,9 @@
             elements.finalScore.textContent = gameState.score;
 
             if (isVictory) {
-                document.querySelector('#gameOverScreen h1').textContent = 'Level Complete!';
+                document.querySelector('#gameOverScreen h1').textContent = 'Уровень пройден';
             } else {
-                document.querySelector('#gameOverScreen h1').textContent = 'Game Over';
+                document.querySelector('#gameOverScreen h1').textContent = 'Game Over!';
             }
         }
 

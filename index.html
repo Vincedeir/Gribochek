@@ -2332,6 +2332,9 @@
                 elements.musicToggle.textContent = "Музыка: Выкл";
                 //elements.musicToggle.classList.add('music-off');
             }
+            if (!gameState.isPaused && !sounds.bgMusic.audio.paused) {
+                sounds.bgMusic.audio.play();
+            }
         }
 
         // Запуск игры

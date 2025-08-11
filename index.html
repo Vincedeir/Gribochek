@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gribochek in labuh's cave 0.502</title>
+    <title>Gribochek in labuh's cave 0.503</title>
     <style>
         body {
             margin: 0;
@@ -1648,7 +1648,7 @@
             // Параметры уровня
             const levelWidth = LEVEL_WIDTH;
             const groundLevel = GAME_HEIGHT - 100;
-            const platformHeight = 20;
+            const platformHeight = 15;
             const minPlatformWidth = 100;
             const maxPlatformWidth = 200;
             const maxGap = 250; // Максимальный горизонтальный разрыв между платформами
@@ -1669,9 +1669,9 @@
             });
 
             // Генерируем случайные пропасти между платформами
-            const minPitWidth = 100;
+            const minPitWidth = 50;
             const maxPitWidth = 300;
-            const pitCount = Math.floor(levelWidth / 2000); // 1 пропасть на каждые 2000px
+            const pitCount = Math.floor(levelWidth / 1800); // 1 пропасть на каждые 2000px
 
             for (let i = 0; i < pitCount; i++) {
                 const pitWidth = minPitWidth + Math.random() * (maxPitWidth - minPitWidth);
@@ -1692,7 +1692,7 @@
             let prevPlatformEnd = 0;
 
             // Создаем цепочку основных платформ
-            while (currentX < levelWidth - 500) {
+            while (currentX < levelWidth - (levelWidth/10)) {
                 const width = minPlatformWidth + Math.random() * (maxPlatformWidth - minPlatformWidth);
                 const height = platformHeight;
 

@@ -177,7 +177,7 @@
             <button class="menu-button" id="editorButton">Редактор Уровней</button>
             <button class="menu-button" id="settingsButton">Настройки</button>
             <button class="menu-button" id="musicToggle">Музыка: Вкл</button>
-            <button class="menu-button" id="topScoresButton">Top 10</button>
+            <button class="menu-button" id="topScoresButton">ТОП 10 споров</button>
         </div>
 
         <div id="gameScreen">
@@ -186,55 +186,55 @@
 
         <div id="gameOverScreen">
             <h1>Game Over</h1>
-            <p>Your score: <span id="finalScore">0</span></p>
+            <p>Твои споры: <span id="finalScore">0</span></p>
             <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
-            <button class="menu-button" id="saveScoreButton">Save Score</button>
-            <button class="menu-button" id="menuButton">Back to Menu</button>
+            <button class="menu-button" id="saveScoreButton">Сохранить</button>
+            <button class="menu-button" id="menuButton">Обратно в Меню</button>
         </div>
 
         <div id="settingsScreen">
-            <h1>Settings</h1>
+            <h1>Настройки</h1>
             <div class="settings-row">
-                <div class="settings-label">Move Left:</div>
+                <div class="settings-label">Влево:</div>
                 <input type="text" class="settings-input" id="leftKey" readonly>
             </div>
             <div class="settings-row">
-                <div class="settings-label">Move Right:</div>
+                <div class="settings-label">Вправо:</div>
                 <input type="text" class="settings-input" id="rightKey" readonly>
             </div>
             <div class="settings-row">
-                <div class="settings-label">Jump:</div>
+                <div class="settings-label">Прыжок:</div>
                 <input type="text" class="settings-input" id="jumpKey" readonly>
             </div>
             <div class="settings-row">
-                <div class="settings-label">Melee Attack:</div>
+                <div class="settings-label">Удар:</div>
                 <input type="text" class="settings-input" id="meleeKey" readonly>
             </div>
             <div class="settings-row">
-                <div class="settings-label">Ranged Attack:</div>
+                <div class="settings-label">Бросок:</div>
                 <input type="text" class="settings-input" id="rangedKey" readonly>
             </div>
-            <button class="menu-button" id="saveSettingsButton">Save Settings</button>
-            <button class="menu-button" id="defaultSettingsButton">Default Settings</button>
-            <button class="menu-button" id="backToMenuButton">Back to Menu</button>
+            <button class="menu-button" id="saveSettingsButton">Сохранить настройки</button>
+            <button class="menu-button" id="defaultSettingsButton">По умолчанию</button>
+            <button class="menu-button" id="backToMenuButton">Обратно в Меню</button>
         </div>
 
         <div id="topScoresScreen">
-            <h1>Top 10 Scores</h1>
+            <h1>ТОП 10 Грибочков</h1>
             <table id="topScoresTable">
                 <thead>
                     <tr>
-                        <th>Rank</th>
-                        <th>Name</th>
-                        <th>Score</th>
-                        <th>Time</th>
+                        <th>Ранг</th>
+                        <th>Имя</th>
+                        <th>Споры</th>
+                        <th>Время</th>
                     </tr>
                 </thead>
                 <tbody id="topScoresBody">
                     <!-- Таблица рекордов будет заполнена динамически -->
                 </tbody>
             </table>
-            <button class="menu-button" id="backToMenuFromScores">Back to Menu</button>
+            <button class="menu-button" id="backToMenuFromScores">Обратно в Меню</button>
         </div>
     </div>
 
@@ -2313,4 +2313,5 @@
 
 
 </html>
+
 

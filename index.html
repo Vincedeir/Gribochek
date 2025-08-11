@@ -378,7 +378,8 @@
             boss: null,
             key: null,
             background: null,
-            projectile: null
+            projectile: null,
+            ground: null
         };
 
         // DOM элементы
@@ -1643,6 +1644,13 @@
                 sprites.background.src = 'img/game_background.png';
                 sprites.background.onload = onLoad;
                 sprites.background.onerror = reject;
+                
+                //Текстура земли
+                sprites.ground = new Image();
+                sprites.ground.src = 'img/ground.png';
+                sprites.ground.onload = onLoad;
+                sprites.ground.onerror = reject;
+
             });
         }
 

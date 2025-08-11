@@ -317,7 +317,6 @@
 
     <script>
         //by Vincedeir 11.08.2025
-        window.gameLoopRunning = false;
         // Основные константы игры
         const GAME_WIDTH = window.innerWidth;
         const GAME_HEIGHT = window.innerHeight;
@@ -431,7 +430,7 @@
                 this.x = x;
                 this.y = y;
                 this.width = 50;
-                this.height = 80;
+                this.height = 70;
                 this.velocityX = 0;
                 this.velocityY = 0;
                 this.isJumping = false;
@@ -1413,6 +1412,7 @@
 
                 if (this.health <= 0) {
                     this.die();
+                    addScore(1000);
                 } else {
                     // Эффект получения урона
                     playSound('bossHurt');
@@ -1420,16 +1420,15 @@
             }
 
             die() {
-                gameObjects.boss = null;
-                addScore(1000);
+                
                 gameState.combo++;
                 updateComboDisplay();
+                gameObjects.boss = null;
                 playSound('bossDeath');
 
-                // Проверка завершения уровня
-                setTimeout(() => {
-                    levelComplete();
-                }, 2000);
+                //Завершение уровня
+                levelComplete();
+                
             }
         }
 

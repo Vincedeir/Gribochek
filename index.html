@@ -4,8 +4,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gribochek in labuh's cave 0.505</title>
+    <title>Gribochek in labuh's cave 0.506</title>
     <style>
+        /* Стили для сенсорного управления */
+        #touchControls {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .touch-controls-group {
+            display: flex;
+            pointer-events: auto;
+        }
+
+        .touch-button {
+            width: 60px;
+            height: 60px;
+            margin: 10px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .touch-button:active {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .touch-button.attack {
+            background-color: rgba(255, 0, 0, 0.3);
+        }
+
+        .touch-button.attack:active {
+            background-color: rgba(255, 0, 0, 0.5);
+        }
+
+        /* Адаптация для маленьких экранов */
+        @media (max-width: 600px) {
+            .touch-button {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                margin: 5px;
+            }
+        }
+
+        /*Основные стили */
         body {
             margin: 0;
             padding: 0;
@@ -176,7 +232,8 @@
             <button class="menu-button" id="customLevelsButton"><img src="loadgame.png" /></button>
             <button class="menu-button" id="editorButton"><img src="editor.png" /></button>
             <button class="menu-button" id="settingsButton"><img src="settings.png" /></button>
-            <button class="menu-button" id="musicToggle"><img src="music.png" /> <img id="mutebg" src="off.png" /></button>
+            <button class="menu-button" id="musicToggle"><img src="music.png" /> <img id="mutebg"
+                    src="off.png" /></button>
             <button class="menu-button" id="topScoresButton"><img src="topten.png" /></button>
         </div>
 
@@ -242,6 +299,18 @@
             <h1>ПАУЗА</h1>
             <button class="menu-button" id="resumeButton">Продолжить</button>
             <button class="menu-button" id="menuFromPauseButton">В меню</button>
+        </div>
+
+        <div id="touchControls">
+            <div class="touch-controls-group" id="leftRightGroup">
+                <div class="touch-button" id="leftButton">←</div>
+                <div class="touch-button" id="rightButton">→</div>
+            </div>
+            <div class="touch-controls-group" id="actionGroup">
+                <div class="touch-button" id="jumpButton">↑</div>
+                <div class="touch-button attack" id="meleeButton">Z</div>
+                <div class="touch-button attack" id="rangedButton">X</div>
+            </div>
         </div>
 
     </div>
@@ -2255,6 +2324,13 @@
             // Загрузка настроек управления
             loadControls();
 
+            // Инициализация сенсорного управления
+            initTouchControls();
+            // Показываем сенсорное управление только на игровом экране
+            document.addEventListener('screenChanged', (e) => {
+                toggleTouchControls(e.detail.screenName === 'game' && isTouchDevice());
+            });
+
             // Настройка обработчиков событий
             window.addEventListener('keydown', handleKeyDown);
             window.addEventListener('keyup', handleKeyUp);
@@ -2343,20 +2419,90 @@
         function toggleMusic() {
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();
-                offimage=document.getElementById('mutebg');
-                offimage.src='on.png';
+                offimage = document.getElementById('mutebg');
+                offimage.src = 'on.png';
                 //elements.musicToggle.textContent = "Музыка: Вкл";
                 //elements.musicToggle.classList.remove('music-off');
             } else {
                 sounds.bgMusic.audio.pause();
-                offimage=document.getElementById('mutebg');
-                offimage.src='off.png';
+                offimage = document.getElementById('mutebg');
+                offimage.src = 'off.png';
                 //elements.musicToggle.textContent = "Музыка: Выкл";
                 //elements.musicToggle.classList.add('music-off');
             }
             if (!gameState.isPaused && !sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();
             }
+        }
+
+        // Функция для проверки сенсорного устройства
+        function isTouchDevice() {
+            return 'ontouchstart' in window || navigator.maxTouchPoints;
+        }
+
+        // Показать/скрыть сенсорное управление
+        function toggleTouchControls(show) {
+            const touchControls = document.getElementById('touchControls');
+            touchControls.style.display = show ? 'flex' : 'none';
+        }
+
+        function initTouchControls() {
+            if (!isTouchDevice()) return;
+
+            toggleTouchControls(true);
+
+            const player = gameObjects.player;
+            const leftButton = document.getElementById('leftButton');
+            const rightButton = document.getElementById('rightButton');
+            const jumpButton = document.getElementById('jumpButton');
+            const meleeButton = document.getElementById('meleeButton');
+            const rangedButton = document.getElementById('rangedButton');
+
+            // Обработчики для кнопок движения
+            leftButton.addEventListener('touchstart', () => {
+                if (player) player.velocityX = -PLAYER_SPEED;
+                if (player) player.direction = -1;
+            });
+
+            leftButton.addEventListener('touchend', () => {
+                if (player && player.velocityX < 0) player.velocityX = 0;
+            });
+
+            rightButton.addEventListener('touchstart', () => {
+                if (player) player.velocityX = PLAYER_SPEED;
+                if (player) player.direction = 1;
+            });
+
+            rightButton.addEventListener('touchend', () => {
+                if (player && player.velocityX > 0) player.velocityX = 0;
+            });
+
+            // Обработчики для кнопок действий
+            jumpButton.addEventListener('touchstart', () => {
+                if (player) player.jump();
+            });
+
+            meleeButton.addEventListener('touchstart', () => {
+                if (player) player.isAttacking = true;
+            });
+
+            meleeButton.addEventListener('touchend', () => {
+                if (player) player.isAttacking = false;
+            });
+
+            rangedButton.addEventListener('touchstart', () => {
+                if (player) player.performRangedAttack();
+            });
+
+            // Предотвращаем масштабирование при двойном тапе
+            document.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+
+            // Предотвращаем контекстное меню при долгом нажатии
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            }, { passive: false });
         }
 
         // Запуск игры

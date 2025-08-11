@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gribochek in labuh's cave 0.503</title>
+    <title>Gribochek in labuh's cave 0.505</title>
     <style>
         body {
             margin: 0;
@@ -176,7 +176,7 @@
             <button class="menu-button" id="customLevelsButton"><img src="loadgame.png" /></button>
             <button class="menu-button" id="editorButton"><img src="editor.png" /></button>
             <button class="menu-button" id="settingsButton"><img src="settings.png" /></button>
-            <button class="menu-button" id="musicToggle"><img src="music.png" />: <img src="off.png" /></button>
+            <button class="menu-button" id="musicToggle"><img src="music.png" /> <img id="mutebg" src="off.png" /></button>
             <button class="menu-button" id="topScoresButton"><img src="topten.png" /></button>
         </div>
 
@@ -247,6 +247,7 @@
     </div>
 
     <script>
+        //by Vincedeir 11.08.2025
         window.gameLoopRunning = false;
         // Основные константы игры
         const GAME_WIDTH = window.innerWidth;
@@ -2342,11 +2343,15 @@
         function toggleMusic() {
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();
-                elements.musicToggle.textContent = "Музыка: Вкл";
+                offimage=document.getElementById('mutebg');
+                offimage.src='on.png';
+                //elements.musicToggle.textContent = "Музыка: Вкл";
                 //elements.musicToggle.classList.remove('music-off');
             } else {
                 sounds.bgMusic.audio.pause();
-                elements.musicToggle.textContent = "Музыка: Выкл";
+                offimage=document.getElementById('mutebg');
+                offimage.src='off.png';
+                //elements.musicToggle.textContent = "Музыка: Выкл";
                 //elements.musicToggle.classList.add('music-off');
             }
             if (!gameState.isPaused && !sounds.bgMusic.audio.paused) {

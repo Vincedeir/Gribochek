@@ -1643,7 +1643,7 @@
             resetGameState();
 
             // Параметры уровня
-            const levelWidth = 5000;
+            const levelWidth = LEVEL_WIDTH;
             const groundLevel = GAME_HEIGHT - 100;
             const platformHeight = 20;
             const minPlatformWidth = 100;
@@ -1758,7 +1758,9 @@
            
             // Создание игрока
             gameObjects.player = new Player(100, groundLevel - 80);
-            gameState.totalEnemies = gameObjects.enemies.length;
+            gameState.totalEnemies = gameObjects.enemies.length; // Считаем количество врагов
+            gameState.isBossSpawned = false; // Сбросить флаг появления босса
+           
 
             updateHUD();
         }
@@ -1767,7 +1769,7 @@
         function checkBossSpawn() {
             if (!gameState.isBossSpawned && gameState.enemiesDefeated >= gameState.totalEnemies) {
                 // Размещаем босса в конце уровня
-                const levelWidth = 5000;
+                const levelWidth = LEVEL_WIDTH;
                 const groundLevel = GAME_HEIGHT - 100;
 
                 gameObjects.boss = new Boss(levelWidth - 200, groundLevel - 120);

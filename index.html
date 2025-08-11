@@ -1782,6 +1782,18 @@
         function levelComplete() {
             gameState.endTime = Date.now();
             showGameOver(true);
+            const animateCamera = () => {
+                const targetX = gameObjects.player.x - SCROLL_THRESHOLD;
+                cameraX += (targetX - cameraX) * 0.1;
+
+                if (Math.abs(targetX - cameraX) > 1) {
+                    requestAnimationFrame(animateCamera);
+                } else {
+                    showGameOver(true);
+                }
+            };
+
+            animateCamera();
         }
 
         // Конец игры
@@ -2311,7 +2323,7 @@
             // Показываем меню
             changeScreen('menu');
         }
-        
+
         function toggleMusic() {
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();

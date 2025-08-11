@@ -1503,7 +1503,7 @@
             draw() {
                 if (!sprites.ground) {
                     // Если текстура не загружена, используем запасной вариант
-                    ctx.fillStyle = '#8B4513';
+                    ctx.fillStyle = color;
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                     return;
                 }
@@ -1512,6 +1512,10 @@
 
                 ctx.save();
                 ctx.fillStyle = this.pattern;
+                // Смещаем начало паттерна для правильного отображения
+                ctx.translate(this.x, this.y);
+                ctx.fillRect(0, 0, this.width, this.height);
+                ctx.restore();
             }
         }
 
@@ -1644,7 +1648,7 @@
                 sprites.background.src = 'img/game_background.png';
                 sprites.background.onload = onLoad;
                 sprites.background.onerror = reject;
-                
+
                 //Текстура земли
                 sprites.ground = new Image();
                 sprites.ground.src = 'img/ground.png';

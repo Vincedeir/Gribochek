@@ -1692,7 +1692,7 @@
             let prevPlatformEnd = 0;
 
             // Создаем цепочку основных платформ
-            while (currentX < levelWidth - (levelWidth/10)) {
+            while (currentX < levelWidth - (levelWidth / 10)) {
                 const width = minPlatformWidth + Math.random() * (maxPlatformWidth - minPlatformWidth);
                 const height = platformHeight;
 
@@ -2309,6 +2309,7 @@
             });
             elements.startButton.addEventListener('click', () => {
                 stopGameLoop(); // Стоп предыдущий цикл
+                cameraX = 0;
                 generateLevel(); //Генерируем уровень
                 changeScreen('game'); //Смена экрана на игровой
                 gameLoop(); // Старт новый цикл

@@ -1491,11 +1491,26 @@
                 this.width = width;
                 this.height = height;
                 this.color = color;
+                this.pattern = null; // Будем хранить паттерн текстуры здесь
+            }
+            createPattern(ctx) {
+                if (!this.pattern && sprites.ground) {
+                    this.pattern = ctx.createPattern(sprites.ground, 'repeat');
+                }
             }
 
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                if (!sprites.ground) {
+                    // Если текстура не загружена, используем запасной вариант
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    return;
+                }
+                // Создаем паттерн при первом вызове
+                this.createPattern(ctx);
+
+                ctx.save();
+                ctx.fillStyle = this.pattern;
             }
         }
 

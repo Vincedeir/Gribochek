@@ -1503,7 +1503,7 @@
             draw() {
                 if (!sprites.ground) {
                     // Если текстура не загружена, используем запасной вариант
-                    ctx.fillStyle = color;
+                    ctx.fillStyle = this.color;
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                     return;
                 }
@@ -1880,7 +1880,7 @@
         // Завершение уровня
         function levelComplete() {
             gameState.endTime = Date.now();
-            showGameOver(true);
+            
             const animateCamera = () => {
                 const targetX = gameObjects.player.x - SCROLL_THRESHOLD;
                 cameraX += (targetX - cameraX) * 0.1;
@@ -1891,8 +1891,9 @@
                     showGameOver(true);
                 }
             };
-
+            gameState.isGameOver = true;
             animateCamera();
+            showGameOver(true);
         }
 
         // Конец игры

@@ -1554,19 +1554,19 @@
             // Для примера создадим заглушки
             sounds = {
                 jump: createAudio('sound/jump.wav'),
-                melee: { play: () => { } },
-                ranged: { play: () => { } },
+                melee: createAudio('sound/melee.wav'),
+                ranged: createAudio('sound/ranged.wav'),
                 hurt: createAudio('sound/hurt.wav'),
                 key: { play: () => { } },
                 door: { play: () => { } },
                 enemyAttack: { play: () => { } },
                 enemyHurt: { play: () => { } },
                 enemyDeath: createAudio('sound/enemyDeath.wav'),
-                enemyRanged: { play: () => { } },
+                enemyRanged: createAudio('sound/enemyRanged.wav'),
                 bossActivate: { play: () => { } },
-                bossAttack: { play: () => { } },
+                bossAttack: createAudio('sound/bossAttack.wav'),
                 bossHurt: { play: () => { } },
-                bossDeath: createAudio('sound/enemyDeath.wav'),
+                bossDeath: createAudio('sound/bossDeath.wav'),
                 bossRanged: { play: () => { } },
                 bgMusic: createAudio('sound/background.mp3', true)  // true = loop
             };

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gribochek in labuh's cave 0.51</title>
+    <title>Gribochek in labuh's cave 0.502</title>
     <style>
         body {
             margin: 0;
@@ -2295,12 +2295,9 @@
                         loadCustomLevel(levelData);
                         changeScreen('game');
 
-                        // Если игровой цикл не запущен
-                        if (!window.gameLoopRunning) {
-                            window.gameLoopRunning = true;
-                            stopGameLoop(); // Остановить предыдущий цикл
-                            gameLoop(); // Запустить новый цикл
-                        }
+                        stopGameLoop(); // Остановить предыдущий цикл
+                        gameLoop(); // Запустить новый цикл
+
 
                     } catch (error) {
                         alert('Не буду так загружать: ' + error.message);

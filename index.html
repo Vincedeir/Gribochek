@@ -3,8 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gribochek in labuh's cave 0.507</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gribochek in labuh's cave 0.508</title>
     <style>
         /* Стили для сенсорного управления */
         #touchControls {
@@ -322,7 +323,7 @@
         const GAME_HEIGHT = window.innerHeight;
         const LEVEL_WIDTH = 7000;
         const LEVEL_HEIGHT = 720;
-        const SCROLL_THRESHOLD = GAME_WIDTH * 0.3; // 30% от ширины экрана
+        let SCROLL_THRESHOLD = GAME_WIDTH * 0.3; // 30% от ширины экрана
         const TILE_SIZE = 64;
         const GRAVITY = 0.5;
         const PLAYER_SPEED = 5;
@@ -2329,6 +2330,17 @@
 
             console.log('Level loaded:', levelData); // Для отладки
         }
+        function handleResize() {
+            // Обновляем размеры canvas
+            elements.gameCanvas.width = window.innerWidth;
+            elements.gameCanvas.height = window.innerHeight;
+
+            // Обновляем порог прокрутки камеры
+            SCROLL_THRESHOLD = window.innerWidth * 0.3;
+
+            // Переключаем видимость сенсорного управления
+            toggleTouchControls(gameState.currentScreen === 'game' && isTouchDevice());
+        }
 
         // Инициализация игры
         async function init() {
@@ -2352,6 +2364,9 @@
             window.addEventListener('keydown', handleKeyDown);
             window.addEventListener('keyup', handleKeyUp);
             window.addEventListener('keydown', handleSettingsKeyDown);
+            // Обработка изменения размера окна
+            window.addEventListener('resize', handleResize);
+            handleResize(); // Вызываем сразу для инициализации
 
             // Обработка кнопок меню
             //Кнопка паузы и запуска на паузскрине

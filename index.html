@@ -1426,7 +1426,7 @@
 
                 //Завершение уровня
                 levelComplete();
-                
+
             }
         }
 
@@ -2468,7 +2468,6 @@
 
             toggleTouchControls(true);
 
-            const player = gameObjects.player;
             const leftButton = document.getElementById('leftButton');
             const rightButton = document.getElementById('rightButton');
             const jumpButton = document.getElementById('jumpButton');
@@ -2476,39 +2475,55 @@
             const rangedButton = document.getElementById('rangedButton');
 
             // Обработчики для кнопок движения
-            leftButton.addEventListener('touchstart', () => {
-                if (player) player.velocityX = -PLAYER_SPEED;
-                if (player) player.direction = -1;
+            leftButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameObjects.player) {
+                    gameObjects.player.velocityX = -PLAYER_SPEED;
+                    gameObjects.player.direction = -1;
+                }
             });
 
-            leftButton.addEventListener('touchend', () => {
-                if (player && player.velocityX < 0) player.velocityX = 0;
+            leftButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (gameObjects.player && gameObjects.player.velocityX < 0) {
+                    gameObjects.player.velocityX = 0;
+                }
             });
 
-            rightButton.addEventListener('touchstart', () => {
-                if (player) player.velocityX = PLAYER_SPEED;
-                if (player) player.direction = 1;
+            rightButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameObjects.player) {
+                    gameObjects.player.velocityX = PLAYER_SPEED;
+                    gameObjects.player.direction = 1;
+                }
             });
 
-            rightButton.addEventListener('touchend', () => {
-                if (player && player.velocityX > 0) player.velocityX = 0;
+            rightButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (gameObjects.player && gameObjects.player.velocityX > 0) {
+                    gameObjects.player.velocityX = 0;
+                }
             });
 
             // Обработчики для кнопок действий
-            jumpButton.addEventListener('touchstart', () => {
-                if (player) player.jump();
+            jumpButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameObjects.player) gameObjects.player.jump();
             });
 
-            meleeButton.addEventListener('touchstart', () => {
-                if (player) player.isAttacking = true;
+            meleeButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameObjects.player) gameObjects.player.isAttacking = true;
             });
 
-            meleeButton.addEventListener('touchend', () => {
-                if (player) player.isAttacking = false;
+            meleeButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (gameObjects.player) gameObjects.player.isAttacking = false;
             });
 
-            rangedButton.addEventListener('touchstart', () => {
-                if (player) player.performRangedAttack();
+            rangedButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameObjects.player) gameObjects.player.performRangedAttack();
             });
 
             // Предотвращаем масштабирование при двойном тапе

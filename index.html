@@ -68,8 +68,6 @@
             padding: 0;
             overflow: hidden;
             font-family: Arial, sans-serif;
-            background-color: #070707;
-            color: white;
         }
 
         #gameContainer {
@@ -82,8 +80,6 @@
             display: block;
             width: 100%;
             height: 100%;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
 
         #musicToggle {
@@ -96,15 +92,10 @@
         }
 
         canvas {
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-            filter: brightness(1.5) contrast(1.5);
+            filter: brightness(1.4) contrast(0.9);
         }
 
         #menuScreen,
-        #gameScreen,
         #gameOverScreen,
         #settingsScreen,
         #topScoresScreen {
@@ -121,7 +112,15 @@
         }
 
         #gameScreen {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
         }
 
         #gameOverScreen,
@@ -322,13 +321,14 @@
         let GAME_WIDTH = window.innerWidth;
         let GAME_HEIGHT = window.innerHeight;
         const LEVEL_WIDTH = 7000;
-        const LEVEL_HEIGHT = 720;
-        let SCROLL_THRESHOLD = GAME_WIDTH * 0.3; // 30% от ширины экрана
-        const TILE_SIZE = 64;
+        const LEVEL_HEIGHT = 1500;
+        let SCROLL_THRESHOLD_X = GAME_WIDTH * 0.5; // 30% от ширины экрана
+        let SCROLL_THRESHOLD_Y = GAME_WIDTH * 0.3; // 30% от ширины экрана
         const GRAVITY = 0.5;
         const PLAYER_SPEED = 5;
         const JUMP_FORCE = -17;
         let cameraX = 0;
+        let cameraY = 0;
         let gameLoopId = null; // Идентификатор запроса анимации
 
         // Состояние игры
@@ -352,6 +352,7 @@
         const controls = {
             left: 'ArrowLeft',
             right: 'ArrowRight',
+            down: 'ArrowDown',
             jump: 'ArrowUp',
             melee: 'KeyZ',
             ranged: 'KeyX'
@@ -379,7 +380,8 @@
             key: null,
             background: null,
             projectile: null,
-            ground: null
+            ground: null,
+            stone: null
         };
 
         // DOM элементы
@@ -447,14 +449,25 @@
             }
 
             update() {
-                // Проверка границ уровня
-                if (this.x < 0) this.x = 0;
-                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
-
-                // Если игрок упал за пределы уровня
-                if (this.y > LEVEL_HEIGHT) {
-                    this.takeDamage(999); // Мгновенная смерть
+                // Проверка границ уровня (столкновение со стенами)
+                if (this.x < 10) { // Левая стена
+                    this.x = 10;
+                    this.velocityX = 0;
                 }
+                if (this.x + this.width > LEVEL_WIDTH - 10) { // Правая стена
+                    this.x = LEVEL_WIDTH - 10 - this.width;
+                    this.velocityX = 0;
+                }
+                if (this.y < 10) { // Верхняя стена
+                    this.y = 10;
+                    this.velocityY = 0;
+                }
+                if (this.y + this.height > LEVEL_HEIGHT - 10) { // Нижняя стена
+                    this.y = LEVEL_HEIGHT - 10 - this.height;
+                    this.velocityY = 0;
+                    this.isJumping = false;
+                }
+
                 // Проверка на попадание в пропасть
                 for (const zone of gameObjects.deathZones) {
                     if (this.x < zone.x + zone.width &&
@@ -464,10 +477,10 @@
 
                         if (zone.isBottomPit) {
                             // Падение за пределы уровня
-                            this.takeDamage(9999);
+                            this.takeDamage(888);
                         } else {
                             // Падение в пропасть между платформами
-                            this.takeDamage(9999);
+                            this.takeDamage(555);
                         }
                         break;
                     }
@@ -506,12 +519,12 @@
                     }
                 }
 
-                // Ограничение выхода за границы экрана (по вертикали)
+                /*/ Ограничение выхода за границы экрана (по вертикали)
                 if (this.y > GAME_HEIGHT - this.height) {
                     this.y = GAME_HEIGHT - this.height;
                     this.velocityY = 0;
                     this.isJumping = false;
-                }
+                }*/
 
                 // Проверка столкновений с платформами
                 for (const platform of gameObjects.platforms) {
@@ -754,7 +767,7 @@
                     this.health -= amount;
                     gameState.health = this.health;
                     updateHUD();
-                    playSound('hurt');
+                    playSound('combo');
 
                     if (this.health <= 0) {
                         this.health = 0;
@@ -773,8 +786,8 @@
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.width = 50;
-                this.height = 80;
+                this.width = 80;
+                this.height = 100;
                 this.velocityX = 0;
                 this.velocityY = 0;
                 this.health = 30;
@@ -788,8 +801,24 @@
             update() {
                 // Гравитация
                 // Проверка границ уровня
-                if (this.x < 0) this.x = 0;
-                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
+                if (this.x < 10) {
+                    this.x = 10;
+                    this.velocityX = 0;
+                    this.direction = 1;
+                }
+                if (this.x + this.width > LEVEL_WIDTH - 10) {
+                    this.x = LEVEL_WIDTH - 10 - this.width;
+                    this.velocityX = 0;
+                    this.direction = -1;
+                }
+                if (this.y < 10) {
+                    this.y = 10;
+                    this.velocityY = 0;
+                }
+                if (this.y + this.height > LEVEL_HEIGHT - 10) {
+                    this.y = LEVEL_HEIGHT - 10 - this.height;
+                    this.velocityY = 0;
+                }
 
                 // Если враг упал за пределы уровня
                 if (this.y > LEVEL_HEIGHT) {
@@ -980,7 +1009,7 @@
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.width = 50;
+                this.width = 60;
                 this.height = 80;
                 this.velocityX = 0;
                 this.velocityY = 0;
@@ -995,8 +1024,24 @@
 
             update() {
                 // Проверка границ уровня
-                if (this.x < 0) this.x = 0;
-                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
+                if (this.x < 10) {
+                    this.x = 10;
+                    this.velocityX = 0;
+                    this.direction = 1;
+                }
+                if (this.x + this.width > LEVEL_WIDTH - 10) {
+                    this.x = LEVEL_WIDTH - 10 - this.width;
+                    this.velocityX = 0;
+                    this.direction = -1;
+                }
+                if (this.y < 10) {
+                    this.y = 10;
+                    this.velocityY = 0;
+                }
+                if (this.y + this.height > LEVEL_HEIGHT - 10) {
+                    this.y = LEVEL_HEIGHT - 10 - this.height;
+                    this.velocityY = 0;
+                }
 
                 // Если игрок упал за пределы уровня
                 if (this.y > LEVEL_HEIGHT) {
@@ -1212,13 +1257,25 @@
 
             update() {
                 // Проверка границ уровня
-                if (this.x < 0) this.x = 0;
-                if (this.x + this.width > LEVEL_WIDTH) this.x = LEVEL_WIDTH - this.width;
-
-                // Если игрок упал за пределы уровня
-                if (this.y > LEVEL_HEIGHT) {
-                    this.takeDamage(999); // Мгновенная смерть
+                if (this.x < 10) {
+                    this.x = 10;
+                    this.velocityX = 0;
+                    this.direction = 1;
                 }
+                if (this.x + this.width > LEVEL_WIDTH - 10) {
+                    this.x = LEVEL_WIDTH - 10 - this.width;
+                    this.velocityX = 0;
+                    this.direction = -1;
+                }
+                if (this.y < 10) {
+                    this.y = 10;
+                    this.velocityY = 0;
+                }
+                if (this.y + this.height > LEVEL_HEIGHT - 10) {
+                    this.y = LEVEL_HEIGHT - 10 - this.height;
+                    this.velocityY = 0;
+                }
+
                 // Гравитация
                 this.velocityY += GRAVITY;
 
@@ -1525,11 +1582,30 @@
                 this.width = width;
                 this.height = height;
                 this.color = color;
+                this.pattern = null; // Будем хранить паттерн текстуры здесь
+            }
+            createPattern(ctx) {
+                if (!this.pattern && sprites.stone) {
+                    this.pattern = ctx.createPattern(sprites.stone, 'repeat');
+                }
             }
 
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                if (!sprites.stone) {
+                    // Если текстура не загружена, используем запасной вариант
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    return;
+                }
+                // Создаем паттерн при первом вызове
+                this.createPattern(ctx);
+
+                ctx.save();
+                ctx.fillStyle = this.pattern;
+                // Смещаем начало паттерна для правильного отображения
+                ctx.translate(this.x, this.y);
+                ctx.fillRect(0, 0, this.width, this.height);
+                ctx.restore();
             }
         }
 
@@ -1576,38 +1652,24 @@
                 this.image = image;
                 this.speed = speed;
                 this.x = 0;
-                // Добавим возможность вертикального смещения
                 this.y = 0;
-                this.height = GAME_HEIGHT;
             }
 
-            update(cameraX) {
+            update(cameraX, cameraY) {
                 this.x = -cameraX * this.speed;
+                this.y = -cameraY * this.speed;
             }
 
-            draw() {
-                // Рассчитываем сколько раз нужно нарисовать фон
-                const firstX = this.x % this.image.width;
-                const drawCount = Math.ceil(GAME_WIDTH / this.image.width) + 1;
-
-                // Рисуем фон с учетом вертикального выравнивания
-                for (let i = -1; i < drawCount; i++) {
-                    const x = firstX + i * this.image.width;
-                    ctx.drawImage(
-                        this.image,
-                        x,
-                        this.y,
-                        this.image.width,
-                        this.height
-                    );
-                }
+            draw() {       
+                ctx.drawImage(this.image,this.x, this.y);
+                
             }
         }
         // Функция загрузки изображений
         function loadImages() {
             return new Promise((resolve, reject) => {
                 let loaded = 0;
-                const total = 7;
+                const total = 8;
 
                 function onLoad() {
                     loaded++;
@@ -1653,6 +1715,12 @@
                 sprites.ground.onload = onLoad;
                 sprites.ground.onerror = reject;
 
+                //Текстура камня
+                sprites.stone = new Image();
+                sprites.stone.src = 'img/stone.png';
+                sprites.stone.onload = onLoad;
+                sprites.stone.onerror = reject;
+
             });
         }
 
@@ -1676,7 +1744,8 @@
                 bossHurt: { play: () => { } },
                 bossDeath: createAudio('sound/bossDeath.wav'),
                 bossRanged: { play: () => { } },
-                bgMusic: createAudio('sound/background.mp3', true)  // true = loop
+                bgMusic: createAudio('sound/background.mp3', true),  // true = loop
+                combo: createAudio('sound/combo.mp3')
             };
         }
         // Воспроизведение звука
@@ -1713,15 +1782,122 @@
                 isGameOver: false,
                 isPaused: false,
                 startTime: Date.now(),
-                endTime: 0
+                endTime: 0,
+                cameraX: 0,
+                cameraY: 0
             };
             Object.assign(gameState, defaultState);
         }
+
+        function generatePlatforms() {
+            const platformCount = 50; // Больше платформ для большого уровня
+            const minPlatformSize = 100;
+            const maxPlatformSize = 750;
+
+            // Гарантируем хотя бы одну платформу в центре
+            const centerPlatform = new Platform(
+                LEVEL_WIDTH / 2 - 150,
+                LEVEL_HEIGHT / 2 - 50,
+                300,
+                20
+            );
+            gameObjects.platforms.push(centerPlatform);
+
+            // Генерируем остальные платформы
+            for (let i = 0; i < platformCount; i++) {
+                const width = minPlatformSize + Math.random() * (maxPlatformSize - minPlatformSize);
+                const height = 15;
+                const x = 50 + Math.random() * (LEVEL_WIDTH - width - 100);
+                const y = 50 + Math.random() * (LEVEL_HEIGHT - height - 100);
+
+                // Проверяем, чтобы платформы не пересекались
+                let overlapping = false;
+                for (const platform of gameObjects.platforms) {
+                    if (x < platform.x + platform.width &&
+                        x + width > platform.x &&
+                        y < platform.y + platform.height &&
+                        y + height > platform.y) {
+                        overlapping = true;
+                        break;
+                    }
+                }
+
+                if (!overlapping) {
+                    const newPlatform = new Platform(x, y, width, height);
+                    gameObjects.platforms.push(newPlatform);
+
+                    // 25% chance to add a key
+                    if (Math.random() < 0.25) {
+                        gameObjects.keys.push(new Key(
+                            x + width / 2 - 15,
+                            y - 30
+                        ));
+                    }
+
+                    // 30% chance to add an enemy (только если платформа достаточно большая)
+                    if (Math.random() < 0.3 && width > 120) {
+                        const enemyType = Math.random() < 0.7 ? 'melee' : 'ranged';
+                        const enemy = enemyType === 'melee'
+                            ? new MeleeEnemy(x + 30, y - 80)
+                            : new RangedEnemy(x + 30, y - 80);
+                        gameObjects.enemies.push(enemy);
+                    }
+                }
+            }
+        }
+
+        function placeBossRandomly() {
+            // Ищем платформу достаточно далеко от центра
+            let suitablePlatform = null;
+            const minDistanceFromCenter = 750;
+
+            for (const platform of gameObjects.platforms) {
+                const dx = platform.x - LEVEL_WIDTH / 2;
+                const dy = platform.y - LEVEL_HEIGHT / 2;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance >= minDistanceFromCenter && platform.width > 150) {
+                    suitablePlatform = platform;
+                    break;
+                }
+            }
+
+            // Если не нашли подходящую платформу, берем любую большую
+            if (!suitablePlatform) {
+                const largePlatforms = gameObjects.platforms.filter(p => p.width > 150);
+                if (largePlatforms.length > 0) {
+                    suitablePlatform = largePlatforms[Math.floor(Math.random() * largePlatforms.length)];
+                } else {
+                    suitablePlatform = gameObjects.platforms[0]; // fallback
+                }
+            }
+
+            gameObjects.boss = new Boss(
+                suitablePlatform.x + suitablePlatform.width / 2 - 50,
+                suitablePlatform.y - 120
+            );
+            gameState.isBossSpawned = true;
+        }
+
+        function placePlayerRandomly() {
+            // Размещаем игрока на центральной платформе
+            const centerPlatform = gameObjects.platforms.find(p =>
+                p.x === LEVEL_WIDTH / 2 - 150 &&
+                p.y === LEVEL_HEIGHT / 2 - 50
+            );
+
+            gameObjects.player = new Player(
+                centerPlatform.x + centerPlatform.width / 2 - 25,
+                centerPlatform.y - 70
+            );
+        }
+
 
         // Генерация уровня !!!
 
         function generateLevel() {
             cameraX = 0;
+            cameraY = 0;
             // Очистка предыдущих объектов
             gameObjects.enemies = [];
             gameObjects.projectiles = [];
@@ -1734,7 +1910,8 @@
             gameObjects.boundaries = [
                 { x: 0, y: 0, width: 10, height: LEVEL_HEIGHT }, // Левая стена
                 { x: LEVEL_WIDTH - 10, y: 0, width: 10, height: LEVEL_HEIGHT }, // Правая стена
-                { x: 0, y: LEVEL_HEIGHT, width: LEVEL_WIDTH, height: 10 } // Пол (если нужно)
+                { x: 0, y: 0, width: LEVEL_WIDTH, height: 10 }, // Верхняя стена
+                { x: 0, y: LEVEL_HEIGHT - 10, width: LEVEL_WIDTH, height: 10 } // Нижняя стена
             ];
 
             // Сброс состояния игры
@@ -1742,7 +1919,7 @@
 
             // Параметры уровня
             const levelWidth = LEVEL_WIDTH;
-            const groundLevel = GAME_HEIGHT - 100;
+            const groundLevel = LEVEL_HEIGHT - 10;
             const platformHeight = 15;
             const minPlatformWidth = 100;
             const maxPlatformWidth = 200;
@@ -1752,21 +1929,27 @@
             // Создание фона
             gameObjects.background = new Background(sprites.background, 0.2);
 
-            // Создание земли (основной платформы)
+             //Создание земли (основной платформы)
             gameObjects.platforms.push(new Platform(0, groundLevel, levelWidth, 100));
-            // Добавляем основную пропасть под уровнем
+             //Добавляем основную пропасть под уровнем
             gameObjects.deathZones.push({
                 x: 0,
                 y: groundLevel + 20,
                 width: levelWidth,
-                height: 100,
-                isBottomPit: true
-            });
+                 height: 100,
+                 isBottomPit: true
+             });
+
+            // Генерация платформ по всему уровню
+            generatePlatforms();
+
+            // Размещение игрока в случайном безопасном месте
+            placePlayerRandomly();
 
             // Генерируем случайные пропасти между платформами
             const minPitWidth = 50;
             const maxPitWidth = 300;
-            const pitCount = Math.floor(levelWidth / 1800); // 1 пропасть на каждые 2000px
+            const pitCount = Math.floor(levelWidth / 1000); // 1 пропасть на каждые 2000px
 
             for (let i = 0; i < pitCount; i++) {
                 const pitWidth = minPitWidth + Math.random() * (maxPitWidth - minPitWidth);
@@ -1786,7 +1969,7 @@
             let currentY = groundLevel - 150;
             let prevPlatformEnd = 0;
 
-            // Создаем цепочку основных платформ
+            /*/ Создаем цепочку основных платформ
             while (currentX < levelWidth - (levelWidth / 10)) {
                 const width = minPlatformWidth + Math.random() * (maxPlatformWidth - minPlatformWidth);
                 const height = platformHeight;
@@ -1820,7 +2003,7 @@
                         : new RangedEnemy(currentX + 30, currentY - 80);
                     gameObjects.enemies.push(enemy);
                 }
-            }
+            }*/
 
             // Добавляем обязательные двери (3 штуки)
             const doorPositions = [
@@ -1853,9 +2036,6 @@
                 }
             }
 
-
-            // Создание игрока
-            gameObjects.player = new Player(100, groundLevel - 80);
             gameState.totalEnemies = gameObjects.enemies.length; // Считаем количество врагов
             gameState.isBossSpawned = false; // Сбросить флаг появления босса
 
@@ -1867,11 +2047,8 @@
         function checkBossSpawn() {
             if (!gameState.isBossSpawned && gameState.enemiesDefeated >= gameState.totalEnemies) {
                 // Размещаем босса в конце уровня
-                const levelWidth = LEVEL_WIDTH;
-                const groundLevel = GAME_HEIGHT - 100;
-
-                gameObjects.boss = new Boss(levelWidth - 200, groundLevel - 120);
-                gameState.isBossSpawned = true;
+                // Размещение босса в случайном месте
+            placeBossRandomly();
             }
         }
 
@@ -1937,6 +2114,7 @@
             if (gameState.combo > 1) {
                 gameState.combo = 0;
                 elements.comboCount.textContent = '0';
+                playSound('combo');
             }
         }
 
@@ -2096,42 +2274,32 @@
             });
         }
 
-        // Основной игровой цикл
-        function gameLoop() {
-            if (gameState.currentScreen !== 'game' || gameState.isPaused || gameState.isGameOver) {
-                gameLoopId = requestAnimationFrame(gameLoop);
-                return;
+        function updateCameraPosition() {
+            // Горизонтальное слежение
+            if (gameObjects.player.x - cameraX > SCROLL_THRESHOLD_X) {
+                cameraX = gameObjects.player.x - SCROLL_THRESHOLD_X;
+            } else if (gameObjects.player.x - cameraX < SCROLL_THRESHOLD_X * 0.5) {
+                cameraX = gameObjects.player.x - SCROLL_THRESHOLD_X * 0.5;
             }
 
-
-            // Очистка canvas
-            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-            // Вычисление позиции камеры
-            //const cameraX = Math.max(0, Math.min(cameraX, levelWidth - GAME_WIDTH));
-            const cameraX = Math.max(0, gameObjects.player.x - SCROLL_THRESHOLD);
-            //const playerScreenX = gameObjects.player.x - cameraX;
-            //if (playerScreenX > SCROLL_THRESHOLD) {
-            //    cameraX = gameObjects.player.x - SCROLL_THRESHOLD;
-            //} else if (playerScreenX < SCROLL_THRESHOLD * 0.3) {
-            //    cameraX = gameObjects.player.x - SCROLL_THRESHOLD * 0.3;
-            //}
+            // Вертикальное слежение
+            if (gameObjects.player.y - cameraY > SCROLL_THRESHOLD_Y) {
+                cameraY = gameObjects.player.y - SCROLL_THRESHOLD_Y;
+            } else if (gameObjects.player.y - cameraY < SCROLL_THRESHOLD_Y * 0.5) {
+                cameraY = gameObjects.player.y - SCROLL_THRESHOLD_Y * 0.5;
+            }
 
             // Ограничиваем камеру границами уровня
+            cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH ));
+            cameraY = Math.max(0, Math.min(cameraY, LEVEL_HEIGHT ));
+        }
 
-            // Сохраняем контекст и применяем трансформацию камеры
-            ctx.save();
-            ctx.translate(-cameraX, 0);
-
-            // Отрисовка ВСЕХ игровых объектов с учетом камеры
-            gameObjects.background.update(cameraX);
+        function drawGameObjects() {
+            gameObjects.background.update(cameraX, cameraY);
             gameObjects.background.draw();
 
-            // Отрисовка статичных объектов
             gameObjects.platforms.forEach(p => p.draw());
             gameObjects.obstacles.forEach(o => o.draw());
-            gameObjects.doors.forEach(d => d.draw());
-            gameObjects.keys.forEach(k => k.draw());
             gameObjects.deathZones.forEach(zone => {
                 // Градиент для эффекта глубины
                 const gradient = ctx.createLinearGradient(zone.x, zone.y, zone.x, zone.y + zone.height);
@@ -2151,8 +2319,9 @@
                     ctx.stroke();
                 }
             });
+            gameObjects.doors.forEach(d => d.draw());
+            gameObjects.keys.forEach(k => k.draw());
 
-            // Отрисовка врагов и босса
             gameObjects.enemies.forEach(e => {
                 e.update();
                 e.draw();
@@ -2163,16 +2332,36 @@
                 gameObjects.boss.draw();
             }
 
-            // Отрисовка проектилей (теперь внутри трансформации камеры)
             gameObjects.projectiles.forEach(p => {
-                if (p.update()) { // Если проектиль еще "жив"
+                if (p.update()) {
                     p.draw();
                 }
             });
 
-            // Отрисовка игрока (поверх всего)
             gameObjects.player.update();
             gameObjects.player.draw();
+        }
+
+        // Основной игровой цикл
+        function gameLoop() {
+            if (gameState.currentScreen !== 'game' || gameState.isPaused || gameState.isGameOver) {
+                gameLoopId = requestAnimationFrame(gameLoop);
+                return;
+            }
+
+
+            // Очистка canvas
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Обновление позиции камеры
+            updateCameraPosition();
+
+            // Сохраняем контекст и применяем трансформацию камеры
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Отрисовка всех игровых объектов
+            drawGameObjects();
 
             // Восстанавливаем контекст
             ctx.restore();
@@ -2182,7 +2371,6 @@
 
             // Удаляем "мертвые" проекции
             gameObjects.projectiles = gameObjects.projectiles.filter(p => p.lifetime > 0);
-            //updateGameObjects(); // Должно обновляться с постоянной скоростью
 
             gameLoopId = requestAnimationFrame(gameLoop);
         }
@@ -2340,7 +2528,8 @@
             elements.gameCanvas.height = GAME_HEIGHT;
 
             // Обновляем порог прокрутки камеры
-            SCROLL_THRESHOLD = GAME_WIDTH * 0.3;
+            SCROLL_THRESHOLD_X = GAME_WIDTH * 0.5; // 30% от ширины экрана
+            SCROLL_THRESHOLD_Y = GAME_WIDTH * 0.3; // 30% от ширины экрана
 
             // Переключаем видимость сенсорного управления
             toggleTouchControls(gameState.currentScreen === 'game' && isTouchDevice());
@@ -2423,6 +2612,7 @@
             elements.startButton.addEventListener('click', () => {
                 stopGameLoop(); // Стоп предыдущий цикл
                 cameraX = 0;
+                cameraY = 0;
                 generateLevel(); //Генерируем уровень
                 changeScreen('game'); //Смена экрана на игровой
                 gameLoop(); // Старт новый цикл

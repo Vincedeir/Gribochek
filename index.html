@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Gribochek in labuh's cave 0.509</title>
+    <title>Gribochek in labuh's cave 0.7b</title>
     <style>
         /* Стили для сенсорного управления */
         #touchControls {
@@ -479,7 +479,7 @@
                             this.takeDamage(888);
                         } else {
                             // Падение в пропасть между платформами
-                            this.takeDamage(555);
+                            this.takeDamage(5);
                         }
                         break;
                     }
@@ -1956,7 +1956,7 @@
 
                 gameObjects.deathZones.push({
                     x: pitX,
-                    y: groundLevel - 10, // Немного выше земли
+                    y: groundLevel - 1, // Немного выше земли
                     width: pitWidth,
                     height: 120,
                     isPit: true

@@ -232,8 +232,7 @@
             <button class="menu-button" id="customLevelsButton">Загрузить свой уровень</button>
             <button class="menu-button" id="editorButton">Редактор Уровней</button>
             <button class="menu-button" id="settingsButton">Настройки</button>
-            <button class="menu-button" id="musicToggle"><img src="img/music.png" /> <img id="mutebg"
-                    src="img/off.png" /></button>
+            <button class="menu-button" id="musicToggle">Музыка: выкл</button>
             <button class="menu-button" id="topScoresButton">ТОП 10</button>
         </div>
 
@@ -2476,11 +2475,11 @@
                         break;
 
                     case 'enemy1':
-                        gameObjects.enemies.push(new MeleeEnemy(obj.x, obj.y - 80)); // -80 чтобы стоял на платформе
+                        gameObjects.enemies.push(new MeleeEnemy(obj.x, obj.y - 100)); // -100 чтобы стоял на платформе
                         break;
 
                     case 'enemy2':
-                        gameObjects.enemies.push(new RangedEnemy(obj.x, obj.y - 80));
+                        gameObjects.enemies.push(new RangedEnemy(obj.x, obj.y - 80)); // -80 чтобы стоял на платформе
                         break;
 
                     case 'key':
@@ -2645,16 +2644,16 @@
         function toggleMusic() {
             if (sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();
-                offimage = document.getElementById('mutebg');
-                offimage.src = 'img/on.png';
-                //elements.musicToggle.textContent = "Музыка: Вкл";
-                //elements.musicToggle.classList.remove('music-off');
+                //offimage = document.getElementById('mutebg');
+                //offimage.src = 'img/on.png';
+                elements.musicToggle.textContent = "Музыка: Вкл";
+                elements.musicToggle.classList.remove('music-off');
             } else {
                 sounds.bgMusic.audio.pause();
-                offimage = document.getElementById('mutebg');
-                offimage.src = 'img/off.png';
-                //elements.musicToggle.textContent = "Музыка: Выкл";
-                //elements.musicToggle.classList.add('music-off');
+                //offimage = document.getElementById('mutebg');
+                //offimage.src = 'img/off.png';
+                elements.musicToggle.textContent = "Музыка: выкл";
+                elements.musicToggle.classList.add('music-off');
             }
             if (!gameState.isPaused && !sounds.bgMusic.audio.paused) {
                 sounds.bgMusic.audio.play();

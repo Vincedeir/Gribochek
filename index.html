@@ -605,7 +605,7 @@
                         this.x + this.width > door.x &&
                         this.y < door.y + door.height &&
                         this.y + this.height > door.y) {
-                            // Аналогично платформам
+                        // Аналогично платформам
                         if (this.velocityY > 0 && this.y + this.height - this.velocityY <= door.y) {
                             this.y = door.y - this.height;
                             this.velocityY = 0;
@@ -783,7 +783,9 @@
                     this.health -= amount;
                     gameState.health = this.health;
                     updateHUD();
-                    playSound('combo');
+                    if (amount >= 0) {
+                        playSound('combo');
+                    }
 
                     if (this.health <= 0) {
                         this.health = 0;
@@ -2034,7 +2036,7 @@
             ];
 
             doorPositions.forEach(x => {
-                gameObjects.doors.push(new Door(x, groundLevel-450));
+                gameObjects.doors.push(new Door(x, groundLevel - 450));
             });
 
             // Добавляем декоративные препятствия (не блокирующие путь)
@@ -2536,7 +2538,7 @@
 
             console.log('Level loaded:', levelData); // Для отладки
         }
-        
+
         //Функция изменения игрового поля
         function handleResize() {
             // Обновляем основные размеры

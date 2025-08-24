@@ -591,6 +591,7 @@
                         this.y + this.height > key.y) {
 
                         gameObjects.keys.splice(i, 1);
+                        this.takeDamage(-10);
                         gameState.keys++;
                         updateHUD();
                         playSound('key');

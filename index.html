@@ -380,7 +380,9 @@
             background: null,
             projectile: null,
             ground: null,
-            stone: null
+            stone: null,
+            pie: null,
+            door: null
         };
 
         // DOM элементы
@@ -602,6 +604,20 @@
                         this.x + this.width > door.x &&
                         this.y < door.y + door.height &&
                         this.y + this.height > door.y) {
+                            // Аналогично платформам
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= door.y) {
+                            this.y = door.y - this.height;
+                            this.velocityY = 0;
+                            this.isJumping = false;
+                        }
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= door.x) {
+                            this.x = door.x - this.width;
+                            this.velocityX = 0;
+                        }
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= door.x + door.width) {
+                            this.x = door.x + door.width;
+                            this.velocityX = 0;
+                        }
 
                         if (gameState.keys > 0) {
                             door.isOpen = true;
@@ -775,6 +791,7 @@
                         // Активация неуязвимости после получения урона
                         this.invincible = true;
                         this.invincibleTimer = 60;
+                        resetCombo();
                     }
                 }
             }
@@ -864,7 +881,7 @@
                 if (this.attackCooldown > 0) {
                     this.attackCooldown--;
                 }
-                // Проверка на падение в пропасть
+                /*/ Проверка на падение в пропасть
                 for (const zone of gameObjects.deathZones) {
                     if (this.x < zone.x + zone.width &&
                         this.x + this.width > zone.x &&
@@ -873,7 +890,7 @@
                         this.die(true); // true = упал в пропасть
                         return;
                     }
-                }
+                }*/
                 // Проверка столкновений с платформами
                 for (const platform of gameObjects.platforms) {
                     if (this.x < platform.x + platform.width &&
@@ -906,7 +923,7 @@
                     }
                 }
 
-                // Проверка столкновений с препятствиями
+                /*/ Проверка столкновений с препятствиями
                 for (const obstacle of gameObjects.obstacles) {
                     if (this.x < obstacle.x + obstacle.width &&
                         this.x + this.width > obstacle.x &&
@@ -924,7 +941,7 @@
                             this.direction = 1;
                         }
                     }
-                }
+                }*/
 
                 // Проверка столкновений с проектилями игрока
                 for (let i = gameObjects.projectiles.length - 1; i >= 0; i--) {
@@ -1125,7 +1142,7 @@
                     }
                 }
 
-                // Проверка столкновений с препятствиями
+                /*/ Проверка столкновений с препятствиями
                 for (const obstacle of gameObjects.obstacles) {
                     if (this.x < obstacle.x + obstacle.width &&
                         this.x + this.width > obstacle.x &&
@@ -1143,7 +1160,7 @@
                             this.direction = 1;
                         }
                     }
-                }
+                }*/
 
                 // Проверка столкновений с проектилями игрока
                 for (let i = gameObjects.projectiles.length - 1; i >= 0; i--) {
@@ -1512,25 +1529,66 @@
                     this.x < 10000 && // Используем реальные координаты уровня
                     this.y > -100 &&
                     this.y < GAME_HEIGHT + 100;
+                // Проверка столкновений с платформами
+                for (const platform of gameObjects.platforms) {
+                    if (this.x < platform.x + platform.width &&
+                        this.x + this.width > platform.x &&
+                        this.y < platform.y + platform.height &&
+                        this.y + this.height > platform.y) {
+
+                        // Столкновение сверху
+                        if (this.velocityY > 0 && this.y + this.height - this.velocityY <= platform.y) {
+                            this.y = platform.y - this.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение снизу
+                        else if (this.velocityY < 0 && this.y - this.velocityY >= platform.y + platform.height) {
+                            this.y = platform.y + platform.height;
+                            this.velocityY = 0;
+                        }
+                        // Столкновение слева
+                        else if (this.velocityX > 0 && this.x + this.width - this.velocityX <= platform.x) {
+                            this.x = platform.x - this.width;
+                            this.velocityX = 0;
+                            this.direction = -1;
+                        }
+                        // Столкновение справа
+                        else if (this.velocityX < 0 && this.x - this.velocityX >= platform.x + platform.width) {
+                            this.x = platform.x + platform.width;
+                            this.velocityX = 0;
+                            this.direction = 1;
+                        }
+                    }
+                }
+
             }
+
 
             draw() {
                 ctx.save();
 
                 if (this.isEnemyProjectile) {
-                    // Снаряд врага - красный круг
+                    // Снаряд врага - красный круг (резервный вариант)
                     ctx.fillStyle = 'red';
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
-                    // Снаряд игрока - желтый прямоугольник
-                    ctx.fillStyle = 'yellow';
-                    if (this.direction === -1) {
-                        ctx.translate(this.x, this.y);
-                        ctx.rotate(Math.PI);
-                        ctx.fillRect(-this.width, -this.height / 2, this.width, this.height);
+                    // Снаряд игрока - пирог
+                    if (sprites.pie && sprites.pie.naturalHeight !== 0) {
+                        if (this.direction === -1) {
+                            // Для движения влево - зеркально отображаем пирог
+                            ctx.save();
+                            ctx.translate(this.x, this.y);
+                            ctx.scale(-1, 1);
+                            ctx.drawImage(sprites.pie, -this.width, -this.height / 2, this.width, this.height);
+                            ctx.restore();
+                        } else {
+                            ctx.drawImage(sprites.pie, this.x, this.y - this.height / 2, this.width, this.height);
+                        }
                     } else {
+                        // Резервный вариант если изображение не загружено
+                        ctx.fillStyle = 'yellow';
                         ctx.fillRect(this.x, this.y - this.height / 2, this.width, this.height);
                     }
                 }
@@ -1624,7 +1682,7 @@
 
         // Класс двери
         class Door {
-            constructor(x, y, width = 40, height = 80) {
+            constructor(x, y, width = 80, height = 450) {
                 this.x = x;
                 this.y = y;
                 this.width = width;
@@ -1634,11 +1692,10 @@
 
             draw() {
                 if (this.isOpen) {
-                    ctx.fillStyle = '#8B4513';
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.drawImage(sprites.door, this.x, this.y, this.width, this.height);
                 } else {
                     ctx.fillStyle = '#654321';
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.drawImage(sprites.door, this.x, this.y, this.width, this.height);
                     ctx.fillStyle = 'gold';
                     ctx.fillRect(this.x + 10, this.y + this.height / 2 - 15, 20, 30);
                 }
@@ -1659,16 +1716,16 @@
                 this.y = -cameraY * this.speed;
             }
 
-            draw() {       
-                ctx.drawImage(this.image,this.x, this.y);
-                
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y);
+
             }
         }
         // Функция загрузки изображений
         function loadImages() {
             return new Promise((resolve, reject) => {
                 let loaded = 0;
-                const total = 8;
+                const total = 9;
 
                 function onLoad() {
                     loaded++;
@@ -1720,6 +1777,18 @@
                 sprites.stone.onload = onLoad;
                 sprites.stone.onerror = reject;
 
+                //Текстура пирога
+                sprites.pie = new Image();
+                sprites.pie.src = 'img/pie.png';
+                sprites.pie.onload = onLoad;
+                sprites.pie.onerror = reject;
+
+                //Текстура двери
+                sprites.door = new Image();
+                sprites.door.src = 'img/door.png';
+                sprites.door.onload = onLoad;
+                sprites.door.onerror = reject;
+
             });
         }
 
@@ -1735,7 +1804,7 @@
                 key: createAudio('sound/key.wav'),
                 door: { play: () => { } },
                 enemyAttack: { play: () => { } },
-                enemyHurt: { play: () => { } },
+                enemyHurt: createAudio('sound/enemyHurt.wav'),
                 enemyDeath: createAudio('sound/enemyDeath.wav'),
                 enemyRanged: createAudio('sound/enemyRanged.wav'),
                 bossActivate: { play: () => { } },
@@ -1789,7 +1858,7 @@
         }
 
         function generatePlatforms() {
-            const platformCount = 50; // Больше платформ для большого уровня
+            const platformCount = 60; // Больше платформ для большого уровня
             const minPlatformSize = 100;
             const maxPlatformSize = 750;
 
@@ -1919,25 +1988,20 @@
             // Параметры уровня
             const levelWidth = LEVEL_WIDTH;
             const groundLevel = LEVEL_HEIGHT - 10;
-            const platformHeight = 15;
-            const minPlatformWidth = 100;
-            const maxPlatformWidth = 200;
-            const maxGap = 250; // Максимальный горизонтальный разрыв между платформами
-            const maxVerticalGap = 300; // Максимальная разница высот
 
             // Создание фона
             gameObjects.background = new Background(sprites.background, 0.2);
 
-             //Создание земли (основной платформы)
+            //Создание земли (основной платформы)
             gameObjects.platforms.push(new Platform(0, groundLevel, levelWidth, 100));
-             //Добавляем основную пропасть под уровнем
+            //Добавляем основную пропасть под уровнем
             gameObjects.deathZones.push({
                 x: 0,
                 y: groundLevel + 20,
                 width: levelWidth,
-                 height: 100,
-                 isBottomPit: true
-             });
+                height: 100,
+                isBottomPit: true
+            });
 
             // Генерация платформ по всему уровню
             generatePlatforms();
@@ -1946,9 +2010,9 @@
             placePlayerRandomly();
 
             // Генерируем случайные пропасти между платформами
-            const minPitWidth = 50;
-            const maxPitWidth = 300;
-            const pitCount = Math.floor(levelWidth / 1000); // 1 пропасть на каждые 2000px
+            const minPitWidth = 100;
+            const maxPitWidth = 250;
+            const pitCount = Math.floor(levelWidth / 500); // 1 пропасть на каждые 500px
 
             for (let i = 0; i < pitCount; i++) {
                 const pitWidth = minPitWidth + Math.random() * (maxPitWidth - minPitWidth);
@@ -1963,56 +2027,16 @@
                 });
             }
 
-            // Гарантированный проходимый путь
-            let currentX = 300;
-            let currentY = groundLevel - 150;
-            let prevPlatformEnd = 0;
-
-            /*/ Создаем цепочку основных платформ
-            while (currentX < levelWidth - (levelWidth / 10)) {
-                const width = minPlatformWidth + Math.random() * (maxPlatformWidth - minPlatformWidth);
-                const height = platformHeight;
-
-                // Новые координаты с учетом ограничений
-                currentX = prevPlatformEnd + 100 + Math.random() * maxGap;
-                currentY = Math.max(
-                    groundLevel - 400,
-                    Math.min(
-                        groundLevel - 100,
-                        currentY + (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 100)
-                    )
-                );
-
-                gameObjects.platforms.push(new Platform(currentX, currentY, width, height));
-                prevPlatformEnd = currentX + width;
-
-                // 30% chance to add a key on this platform
-                if (Math.random() < 0.3) {
-                    gameObjects.keys.push(new Key(
-                        currentX + width / 2 - 15,
-                        currentY - 30
-                    ));
-                }
-
-                // 40% chance to add an enemy on this platform
-                if (Math.random() < 0.4) {
-                    const enemyType = Math.random() < 0.7 ? 'melee' : 'ranged';
-                    const enemy = enemyType === 'melee'
-                        ? new MeleeEnemy(currentX + 30, currentY - 80)
-                        : new RangedEnemy(currentX + 30, currentY - 80);
-                    gameObjects.enemies.push(enemy);
-                }
-            }*/
-
-            // Добавляем обязательные двери (3 штуки)
+            // Добавляем обязательные двери (4 штуки)
             const doorPositions = [
-                levelWidth * 0.3,
+                levelWidth * 0.2,
+                levelWidth * 0.4,
                 levelWidth * 0.6,
                 levelWidth * 0.8
             ];
 
             doorPositions.forEach(x => {
-                gameObjects.doors.push(new Door(x, groundLevel - 80));
+                gameObjects.doors.push(new Door(x, groundLevel-450));
             });
 
             // Добавляем декоративные препятствия (не блокирующие путь)
@@ -2045,9 +2069,8 @@
         // Проверка появления босса
         function checkBossSpawn() {
             if (!gameState.isBossSpawned && gameState.enemiesDefeated >= gameState.totalEnemies) {
-                // Размещаем босса в конце уровня
                 // Размещение босса в случайном месте
-            placeBossRandomly();
+                placeBossRandomly();
             }
         }
 
@@ -2082,7 +2105,6 @@
             // Увеличение очков в зависимости от комбо
             const comboMultiplier = 1 + gameState.combo * 0.1;
             const totalAmount = Math.floor(amount * comboMultiplier);
-
             gameState.score += totalAmount;
             updateHUD();
         }
@@ -2289,8 +2311,8 @@
             }
 
             // Ограничиваем камеру границами уровня
-            cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH ));
-            cameraY = Math.max(0, Math.min(cameraY, LEVEL_HEIGHT ));
+            cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH));
+            cameraY = Math.max(0, Math.min(cameraY, LEVEL_HEIGHT));
         }
 
         function drawGameObjects() {

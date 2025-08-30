@@ -1529,9 +1529,9 @@
 
                 return this.lifetime > 0 &&
                     this.x > -100 &&
-                    this.x < 10000 && // Используем реальные координаты уровня
+                    this.x < LEVEL_WIDTH && // Используем реальные координаты уровня
                     this.y > -100 &&
-                    this.y < GAME_HEIGHT + 100;
+                    this.y < LEVEL_HEIGHT + 100;
                 // Проверка столкновений с платформами
                 for (const platform of gameObjects.platforms) {
                     if (this.x < platform.x + platform.width &&
@@ -1685,7 +1685,7 @@
 
         // Класс двери
         class Door {
-            constructor(x, y, width = 80, height = 450) {
+            constructor(x, y, width = 80, height = 350) {
                 this.x = x;
                 this.y = y;
                 this.width = width;
@@ -2042,8 +2042,8 @@
             // Добавляем декоративные препятствия (не блокирующие путь)
             for (let i = 0; i < 30; i++) {
                 const width = 1 + Math.random() * 60;
-                const height = 50 + Math.random() * 500;
-                const x = 300 + Math.random() * (levelWidth - 600);
+                const height = 50 + Math.random() * 300;
+                const x = 150 + Math.random() * (levelWidth - 600);
                 const y = groundLevel - height;
 
                 // Проверяем, чтобы препятствие не блокировало путь
